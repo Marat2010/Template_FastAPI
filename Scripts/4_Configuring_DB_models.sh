@@ -66,7 +66,7 @@ python3 "$PWD_SCRIPT"/Scripts/mk_file_models___init.py "$ENTITY_NAME"
 
 echo
 echo "=== Коммитим проект ==="
-git status
+# git status
 git add .
 git commit -am "Preparing Postgres DB, Item model, Base, db_helper"
 

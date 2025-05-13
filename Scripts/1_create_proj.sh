@@ -74,7 +74,7 @@ echo "=== Коммитим проект ==="
 pwd
 cp ../Scripts/.gitignore ./
 git init
-git status
+# git status
 git add .
 git commit -am "First commit"
 
@@ -82,9 +82,6 @@ echo
 echo "=== Текущий каталог: $PWD ==="
 echo "=== Текущая структуру: ==="
 tree -a --dirsfirst -I '__pycache__|\.venv|\.git|\.idea'
-echo
-echo "Для запуска проекта перейдите в каталог: cd $PROJECT_NAME"
-echo "И запустите: uv run python $PROJECT_NAME/main.py"
 echo
 echo "Запись переменных для скрипта в 'export_VARS.sh'"
 cd "$PWD_SCRIPT"/Scripts || exit 1

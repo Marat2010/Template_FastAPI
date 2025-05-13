@@ -2,7 +2,7 @@ import sys
 
 # Проверяем, передан ли аргумент
 if len(sys.argv) != 2:
-    print("Использование: python mk_file_config.py <ENTITY_NAME>")
+    print("Использование: python mk_file_core_config.py <ENTITY_NAME>")
     sys.exit(1)
 
 ENTITY_NAME = sys.argv[1]  # Получаем значение ENTITY_NAME из аргумента командной строки
@@ -66,5 +66,5 @@ settings = Settings()
 with open(f"core/config.py", "w") as file:
     file.write(content)
 
-print(f"Файл config.py успешно создан.")
+print(f"Файл core/config.py успешно создан.")
 

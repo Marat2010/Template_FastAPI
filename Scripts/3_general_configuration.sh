@@ -11,7 +11,7 @@ echo "=== Имя проекта: $PROJECT_NAME, Сущность: $ENTITY_NAME, 
 cd "$PWD_SCRIPT/$PROJECT_NAME/$PROJECT_NAME" || { echo "Не удалось перейти в каталог проекта $PROJECT_NAME/$PROJECT_NAME"; exit 1; }
 
 echo "=== Создаем файл core/config.py ==="
-python3 "$PWD_SCRIPT"/Scripts/mk_file_config.py "$ENTITY_NAME"
+python3 "$PWD_SCRIPT"/Scripts/mk_file_core_config.py "$ENTITY_NAME"
 
 echo
 USER_BD=$USER
@@ -45,7 +45,7 @@ APP_CONFIG__DB__ECHO=1
 
 echo
 echo "=== Коммитим проект ==="
-git status
+# git status
 git add .
 git commit -am "Structure and setting up general configuration"
 echo

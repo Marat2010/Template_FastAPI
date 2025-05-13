@@ -49,7 +49,7 @@ echo "=== Проверьте БД ($PROJECT_NAME), должна быть соз�
 read -rp "Для продолжения нажмите 'Enter'"
 echo
 echo "=== Коммитим проект ==="
-git status
+# git status
 git add .
 git commit -am "Setting up alembic, creating tables."
 
