@@ -1,6 +1,0 @@
-0000000000000000000000000000000000000000 fe2fb406869b75287c745e71cf119470cf520919 Marat2010 <marat.s.73@mail.ru> 1747141376 +0300	commit (initial): First commit
-fe2fb406869b75287c745e71cf119470cf520919 19a4d4fb47db9fd0c5d0600573d45e9701f702e1 Marat2010 <marat.s.73@mail.ru> 1747141379 +0300	commit: Structure and setting up general configuration
-19a4d4fb47db9fd0c5d0600573d45e9701f702e1 a0451f8463c368e3567f8c400c4eeb7a00a7e326 Marat2010 <marat.s.73@mail.ru> 1747141389 +0300	commit: Preparing Postgres DB, Item model, Base, db_helper
-a0451f8463c368e3567f8c400c4eeb7a00a7e326 fc83501d5f2807eb2439cc50013127b9048b67f9 Marat2010 <marat.s.73@mail.ru> 1747141393 +0300	commit: Setting up alembic, creating tables.
-fc83501d5f2807eb2439cc50013127b9048b67f9 c7b491c1c52e99453e8b09604c1aaddbea5cd720 Marat2010 <marat.s.73@mail.ru> 1747141393 +0300	commit: Setting up alembic, creating tables.
-c7b491c1c52e99453e8b09604c1aaddbea5cd720 fad32a266c379484c9796d66bbdc9a470f1bc262 Marat2010 <marat.s.73@mail.ru> 1747141394 +0300	commit: Configuring routes.
