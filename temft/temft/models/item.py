@@ -5,7 +5,7 @@ from sqlalchemy.orm import Mapped, mapped_column
 from .base import Base
 from .mixins.int_id_pk import IntIdPkMixin
 
-class Bot(IntIdPkMixin, Base):
+class Item(IntIdPkMixin, Base):
     name: Mapped[str] = mapped_column(unique=True)
     description: Mapped[str] = mapped_column(nullable=True)
     is_active: Mapped[bool] = mapped_column()

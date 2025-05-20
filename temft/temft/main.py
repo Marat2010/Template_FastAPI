@@ -22,7 +22,7 @@ async def lifespan(app: FastAPI):
 
 
 main_app = FastAPI(default_response_class=ORJSONResponse, lifespan=lifespan)
-main_app.include_router(api_router, tags=["Bot"])
+main_app.include_router(api_router, tags=["Item"])
 
 
 if __name__ == '__main__':

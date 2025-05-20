@@ -3,21 +3,21 @@ from typing import Dict, Any
 from pydantic import BaseModel
 from pydantic import ConfigDict
 
-class BotBase(BaseModel):
+class ItemBase(BaseModel):
     name: str
     description: str
     is_active: bool
     config: Dict[str, Any] | None = None
     startup_command: str
 
-class BotCreate(BotBase):
+class ItemCreate(ItemBase):
     pass
 
-class BotUpdate(BotBase):
+class ItemUpdate(ItemBase):
     """Для PUT-запросов (все поля обязательны, как в ItemBase)"""
-    pass  # Наследует все поля из BotBase без изменений
+    pass  # Наследует все поля из ItemBase без изменений
     
-class BotPatch(BaseModel):
+class ItemPatch(BaseModel):
     """Схема для PATCH-запросов (все поля опциональны)"""
     name: str | None = None
     description: str | None = None
@@ -25,7 +25,7 @@ class BotPatch(BaseModel):
     config: Dict[str, Any] | None = None
     startup_command: str | None = None
         
-class BotRead(BotBase):
+class ItemRead(ItemBase):
     model_config = ConfigDict(
         from_attributes=True,
     )

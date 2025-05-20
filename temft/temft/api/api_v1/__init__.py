@@ -1,15 +1,15 @@
 from fastapi import APIRouter
 from core.config import settings
 
-from .bot import router as bot_router
+from .item import router as item_router
 
 router = APIRouter(
     prefix=settings.api.v1.prefix,
 )
 
 router.include_router(
-    bot_router,
-    prefix=settings.api.v1.bot,
+    item_router,
+    prefix=settings.api.v1.item,
     # prefix=settings.api.v1.item2,
 )
 

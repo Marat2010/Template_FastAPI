@@ -6,23 +6,23 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.exc import IntegrityError
 from fastapi import HTTPException, status
 
-from models import Bot
-from schemas.bot import BotCreate
+from models import Item
+from schemas.item import ItemCreate
 
 
-async def get_all_bot(session: AsyncSession) -> Sequence[Bot]:
-    stmt = select(Bot).order_by(Bot.id)
+async def get_all_item(session: AsyncSession) -> Sequence[Item]:
+    stmt = select(Item).order_by(Item.id)
     result = await session.scalars(stmt)
     return result.all()
 
 
-async def create_bot(session: AsyncSession, bot: BotCreate) -> Bot:
+async def create_item(session: AsyncSession, item: ItemCreate) -> Item:
     try:
-        bot = Bot(**bot.model_dump())
-        session.add(bot)
+        item = Item(**item.model_dump())
+        session.add(item)
         await session.commit()
-        await session.refresh(bot)
-        return bot
+        await session.refresh(item)
+        return item
     except IntegrityError as e:
         await session.rollback()
         if "unique constraint" in str(e).lower():
@@ -30,7 +30,7 @@ async def create_bot(session: AsyncSession, bot: BotCreate) -> Bot:
             raise HTTPException(
                 status_code=status.HTTP_409_CONFLICT,
                 # detail="Item violates unique constraint"
-                detail=f"Item with name '{bot.name}' already exists"
+                detail=f"Item with name '{item.name}' already exists"
             )
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,

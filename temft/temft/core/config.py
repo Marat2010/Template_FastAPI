@@ -12,7 +12,7 @@ class RunConfig(BaseModel):
 
 class ApiV1Prefix(BaseModel):
     prefix: str = "/v1"
-    bot: str = "/bot"
+    item: str = "/item"
     # new_entity: str = "/new_entity"
 
 
