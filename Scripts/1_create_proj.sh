@@ -59,14 +59,15 @@ uv init --python $VER_PYTHON
 uv add fastapi "uvicorn[standard]" "pydantic[email]" pydantic-settings
 rm main.py
 echo
-mkdir "$PROJECT_NAME" && echo "Каталог проекта FastAPI '$PROJECT_NAME' создан" || exit 1
+#mkdir "$PROJECT_NAME" && echo "Каталог проекта FastAPI '$PROJECT_NAME' создан" || exit 1
 
 echo "import uvicorn
 from fastapi import FastAPI
 main_app = FastAPI()
 if __name__ == '__main__':
     uvicorn.run('main:main_app')
-" > ./"$PROJECT_NAME"/main.py
+" > ./main.py
+#" > ./"$PROJECT_NAME"/main.py
 echo "Создан 'main.py''"
 
 echo

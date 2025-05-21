@@ -34,7 +34,8 @@ fi
 echo
 read -rp "Если прочитали нажмите 'Enter'"
 
-cd "$PWD_SCRIPT/$PROJECT_NAME/$PROJECT_NAME" || exit 1
+cd "$PWD_SCRIPT/$PROJECT_NAME/" || exit 1
+#cd "$PWD_SCRIPT/$PROJECT_NAME/$PROJECT_NAME" || exit 1
 
 echo
 echo "Формирование файла models/base.py"

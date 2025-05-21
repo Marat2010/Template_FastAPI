@@ -4,12 +4,12 @@ echo "# ====================="
 echo "# === Общий скрипт. ==="
 echo "# ====================="
 
-./Scripts/1_create_proj.sh
-./Scripts/2_structure.sh
-./Scripts/3_general_configuration.sh
-./Scripts/4_Configuring_DB_models.sh
-./Scripts/5_Alembic_Creating_tables.sh
-./Scripts/6_Schemes_Pydantic_CRUD.sh
+#./Scripts/1_create_proj.sh
+#./Scripts/2_structure.sh
+#./Scripts/3_general_configuration.sh
+#./Scripts/4_Configuring_DB_models.sh
+#./Scripts/5_Alembic_Creating_tables.sh
+#./Scripts/6_Schemes_Pydantic_CRUD.sh
 ./Scripts/7_Configuring_routes.sh
 
 echo "# ====================================================="
@@ -23,11 +23,13 @@ tree -a --dirsfirst -I '__pycache__|\.venv|\.git|\.idea'
 
 echo
 echo "# ==============================================================="
-echo "# === Для запуска проекта перейдите в каталог: cd $PROJECT_NAME/$PROJECT_NAME ==="
+echo "# === Для запуска проекта перейдите в каталог: cd $PROJECT_NAME/ ==="
 echo "# ===          И запустите: uv run python main.py             ==="
 echo "# ==============================================================="
 echo
 
+#=====================================
+#echo "# === Для запуска проекта перейдите в каталог: cd $PROJECT_NAME/$PROJECT_NAME ==="
 #=====================================
 #source ./Scripts/1_create_proj.sh
 #sleep 5

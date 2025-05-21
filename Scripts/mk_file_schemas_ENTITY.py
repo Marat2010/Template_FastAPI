@@ -13,6 +13,7 @@ from typing import Dict, Any
 from pydantic import BaseModel
 from pydantic import ConfigDict
 
+
 class {ENTITY_NAME}Base(BaseModel):
     name: str
     description: str
@@ -20,12 +21,15 @@ class {ENTITY_NAME}Base(BaseModel):
     config: Dict[str, Any] | None = None
     startup_command: str
 
+
 class {ENTITY_NAME}Create({ENTITY_NAME}Base):
     pass
+
 
 class {ENTITY_NAME}Update({ENTITY_NAME}Base):
     """Для PUT-запросов (все поля обязательны, как в ItemBase)"""
     pass  # Наследует все поля из {ENTITY_NAME}Base без изменений
+    
     
 class {ENTITY_NAME}Patch(BaseModel):
     """Схема для PATCH-запросов (все поля опциональны)"""
@@ -34,6 +38,7 @@ class {ENTITY_NAME}Patch(BaseModel):
     is_active: bool | None = None
     config: Dict[str, Any] | None = None
     startup_command: str | None = None
+
         
 class {ENTITY_NAME}Read({ENTITY_NAME}Base):
     model_config = ConfigDict(
@@ -44,8 +49,6 @@ class {ENTITY_NAME}Read({ENTITY_NAME}Base):
     updated_at: datetime
 
 '''
-
-
 
 # Запись в файл
 with open(f"schemas/{ENTITY_NAME.lower()}.py", "w") as file:

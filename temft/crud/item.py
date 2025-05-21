@@ -7,7 +7,7 @@ from sqlalchemy.exc import IntegrityError
 from fastapi import HTTPException, status
 
 from models import Item
-from schemas.item import ItemCreate
+from schemas.item import ItemCreate, ItemUpdate, ItemPatch 
 
 
 async def get_all_item(session: AsyncSession) -> Sequence[Item]:
@@ -15,6 +15,18 @@ async def get_all_item(session: AsyncSession) -> Sequence[Item]:
     result = await session.scalars(stmt)
     return result.all()
 
+
+async def get_item(session: AsyncSession, item_id: int) -> Item | None:
+    return await session.get(Item, item_id)
+
+
+async def get_items_by_field(session: AsyncSession, field_name: str, value: str) -> Sequence[Item]:
+    # Получаем атрибут модели по имени поля
+    field = getattr(Item, field_name)
+    stmt = select(Item).where(field == value)
+    result = await session.scalars(stmt)
+    return result.all()
+    
 
 async def create_item(session: AsyncSession, item: ItemCreate) -> Item:
     try:
@@ -37,3 +49,20 @@ async def create_item(session: AsyncSession, item: ItemCreate) -> Item:
             detail="Database integrity error"
         )
 
+
+async def update_item(
+    session: AsyncSession,
+    item: Item,
+    item_update: ItemUpdate | ItemPatch,
+    partial: bool = False,
+) -> Item:
+    for name, value in item_update.model_dump(exclude_unset=partial).items():
+        setattr(item, name, value)
+    await session.commit()
+    return item
+
+
+async def delete_item(session: AsyncSession, item: Item,) -> None:
+    await session.delete(item)
+    await session.commit()
+    

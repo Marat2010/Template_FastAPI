@@ -8,7 +8,7 @@ echo "=== Переменные для скрипта: ==="
 echo "=== Путь для скрипта: $PWD_SCRIPT ==="
 echo "=== Имя проекта: $PROJECT_NAME, Сущность: $ENTITY_NAME, Python: $VER_PYTHON ==="
 
-cd "$PWD_SCRIPT/$PROJECT_NAME/$PROJECT_NAME" || { echo "Не удалось перейти в каталог проекта $PROJECT_NAME/$PROJECT_NAME"; exit 1; }
+cd "$PWD_SCRIPT/$PROJECT_NAME" || { echo "Не удалось перейти в каталог проекта $PROJECT_NAME/"; exit 1; }
 
 mkdir api api/api_v1 core crud models models/mixins schemas utils
 touch api/__init__.py api/api_v1/__init__.py "api/api_v1/$ENTITY_NAME.py"

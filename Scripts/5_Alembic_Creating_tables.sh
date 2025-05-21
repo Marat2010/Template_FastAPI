@@ -8,7 +8,8 @@ echo "=== Переменные для скрипта: ==="
 echo "=== Путь для скрипта: $PWD_SCRIPT ==="
 echo "=== Имя проекта: $PROJECT_NAME, Сущность: $ENTITY_NAME, Python: $VER_PYTHON ==="
 
-cd "$PWD_SCRIPT/$PROJECT_NAME/$PROJECT_NAME" || { echo "Не удалось перейти в каталог проекта $PROJECT_NAME"; exit 1; }
+cd "$PWD_SCRIPT/$PROJECT_NAME/" || { echo "Не удалось перейти в каталог проекта $PROJECT_NAME"; exit 1; }
+#cd "$PWD_SCRIPT/$PROJECT_NAME/$PROJECT_NAME" || { echo "Не удалось перейти в каталог проекта $PROJECT_NAME"; exit 1; }
 
 echo
 echo "=== Инициализируем  alembic ==="

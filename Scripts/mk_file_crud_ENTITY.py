@@ -17,7 +17,7 @@ from sqlalchemy.exc import IntegrityError
 from fastapi import HTTPException, status
 
 from models import {ENTITY_NAME}
-from schemas.{ENTITY_NAME_low} import {ENTITY_NAME}Create
+from schemas.{ENTITY_NAME_low} import {ENTITY_NAME}Create, {ENTITY_NAME}Update, {ENTITY_NAME}Patch 
 
 
 async def get_all_{ENTITY_NAME_low}(session: AsyncSession) -> Sequence[{ENTITY_NAME}]:
@@ -25,6 +25,18 @@ async def get_all_{ENTITY_NAME_low}(session: AsyncSession) -> Sequence[{ENTITY_N
     result = await session.scalars(stmt)
     return result.all()
 
+
+async def get_{ENTITY_NAME_low}(session: AsyncSession, {ENTITY_NAME_low}_id: int) -> {ENTITY_NAME} | None:
+    return await session.get({ENTITY_NAME}, {ENTITY_NAME_low}_id)
+
+
+async def get_{ENTITY_NAME_low}s_by_field(session: AsyncSession, field_name: str, value: str) -> Sequence[{ENTITY_NAME}]:
+    # Получаем атрибут модели по имени поля
+    field = getattr({ENTITY_NAME}, field_name)
+    stmt = select({ENTITY_NAME}).where(field == value)
+    result = await session.scalars(stmt)
+    return result.all()
+    
 
 async def create_{ENTITY_NAME_low}(session: AsyncSession, {ENTITY_NAME_low}: {ENTITY_NAME}Create) -> {ENTITY_NAME}:
     try:
@@ -51,10 +63,27 @@ content += f'''already exists"
             detail="Database integrity error"
         )
 
+
+async def update_{ENTITY_NAME_low}(
+    session: AsyncSession,
+    {ENTITY_NAME_low}: {ENTITY_NAME},
+    {ENTITY_NAME_low}_update: {ENTITY_NAME}Update | {ENTITY_NAME}Patch,
+    partial: bool = False,
+) -> {ENTITY_NAME}:
+    for name, value in {ENTITY_NAME_low}_update.model_dump(exclude_unset=partial).items():
+        setattr({ENTITY_NAME_low}, name, value)
+    await session.commit()
+    return {ENTITY_NAME_low}
+
+
+async def delete_{ENTITY_NAME_low}(session: AsyncSession, {ENTITY_NAME_low}: {ENTITY_NAME},) -> None:
+    await session.delete({ENTITY_NAME_low})
+    await session.commit()
+    
 '''
 
 # Запись в файл
-with open(f"crud/{ENTITY_NAME.lower()}.py", "w") as file:
+with open(f"crud/{ENTITY_NAME_low}.py", "w") as file:
     file.write(content)
 
 print(f"Файл crud/{ENTITY_NAME.lower()}.py успешно сделан.")
