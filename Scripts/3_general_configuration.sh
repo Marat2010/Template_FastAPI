@@ -40,7 +40,7 @@ APP_CONFIG__DB__ECHO=1
 " > ./.env.template
 
 echo "APP_CONFIG__DB__URL=postgresql+asyncpg://$USER_BD:$PASSWD_BD@localhost:5434/$PROJECT_NAME
-APP_CONFIG__DB__ECHO=1
+APP_CONFIG__DB__ECHO=0
 " > ./.env
 
 echo

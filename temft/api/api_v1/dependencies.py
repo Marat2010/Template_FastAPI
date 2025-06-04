@@ -8,11 +8,15 @@ from crud import item as items_crud
 
 
 async def item_by_id(
-        item_id: Annotated[int, Path],
-        session: Annotated[AsyncSession, Depends(db_helper.session_getter)]) -> Item:
+    item_id: Annotated[int, Path],
+    session: Annotated[AsyncSession, Depends(db_helper.session_getter)],
+) -> Item:
 
     item = await items_crud.get_item(session=session, item_id=item_id)
     if item is None:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND,
-                            detail=f"Item id: {item_id} not found!")
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Item id: {item_id} not found!")
+
     return item
+

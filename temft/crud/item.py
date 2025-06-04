@@ -27,7 +27,7 @@ async def is_name_exists(session: AsyncSession,
     if exclude_item_id is not None:
         query = query.where(Item.id != exclude_item_id)
     return bool(await session.scalar(query))
-
+    
 
 async def create_item(item: ItemCreate, session: AsyncSession) -> Item:
     # Проверка перед созданием
@@ -71,49 +71,4 @@ async def get_items_by_filters(
     stmt = apply_filters(Item, filters, time_filters)
     result = await session.scalars(stmt)
     return result.all()
-
-
-# =========================================
-# =========================================
-    # return await session.scalar(query) is not None
-# =========================================
-    # if await session.scalar(select(Item).where(Item.name == item.name)):
-    #     raise ItemNameConflict()
-
-    # if "name" in update_data:
-    #     if await session.scalar(
-    #         select(Item)
-    #         .where(Item.name == update_data["name"])
-    #         .where(Item.id != item.id)
-    #     ):
-    #         raise ItemNameConflict()
-# =========================================
-# async def get_items_by_filters(
-#         session: AsyncSession,
-#         filters: dict,
-#         time_filters: dict | None = None
-# ) -> Sequence[Item]:
-#     stmt = select(Item)
-#
-#     # Применяем обычные фильтры (равенство)
-#     for field_name, value in filters.items():
-#         field = getattr(Item, field_name)
-#         stmt = stmt.where(field == value)
-#
-#     # Применяем временные фильтры (больше/меньше)
-#     if time_filters:
-#         for filter_key, value in time_filters.items():
-#             field_name, operator = filter_key.split('__')
-#             field = getattr(Item, field_name)
-#
-#             if operator == 'gt':
-#                 stmt = stmt.where(field > value)
-#             elif operator == 'lt':
-#                 stmt = stmt.where(field < value)
-#
-#     result = await session.scalars(stmt)
-#     return result.all()
-# =========================================
-# async def delete_item(session: AsyncSession, item: Item,) -> None:
-# =========================================
-
+    

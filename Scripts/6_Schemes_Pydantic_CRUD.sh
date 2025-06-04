@@ -19,6 +19,13 @@ echo
 echo "Формирование файла crud/$ENTITY_NAME.py"
 python3 "$PWD_SCRIPT"/Scripts/mk_file_crud_ENTITY.py "$ENTITY_NAME"
 
+echo
+echo "Формирование файла api/api_v1/exceptions.py"
+python3 "$PWD_SCRIPT"/Scripts/mk_file_api_api_v1_exceptions.py "$ENTITY_NAME"
+
+echo
+echo "Формирование файла utils/filters.py"
+python3 "$PWD_SCRIPT"/Scripts/mk_file_utils_filters.py
 
 #==========================================
 echo

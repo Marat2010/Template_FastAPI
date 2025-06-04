@@ -19,8 +19,8 @@ class ItemCreate(ItemBase):
 class ItemUpdate(ItemBase):
     """Для PUT-запросов (все поля обязательны, как в ItemBase)"""
     pass  # Наследует все поля из ItemBase без изменений
-
-
+    
+    
 class ItemPatch(BaseModel):
     """Схема для PATCH-запросов (все поля опциональны)"""
     name: str | None = None
@@ -29,7 +29,7 @@ class ItemPatch(BaseModel):
     config: Dict[str, Any] | None = None
     startup_command: str | None = None
 
-
+        
 class ItemRead(ItemBase):
     model_config = ConfigDict(
         from_attributes=True,

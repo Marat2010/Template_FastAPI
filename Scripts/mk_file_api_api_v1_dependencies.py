@@ -21,19 +21,18 @@ async def {ENTITY_NAME_low}_by_id(
     {ENTITY_NAME_low}_id: Annotated[int, Path],
     session: Annotated[AsyncSession, Depends(db_helper.session_getter)],
 ) -> {ENTITY_NAME}:
-    {ENTITY_NAME_low} = await {ENTITY_NAME_low}s_crud.get_{ENTITY_NAME_low}(session=session, {ENTITY_NAME_low}_id={ENTITY_NAME_low}_id)
-    if {ENTITY_NAME_low}:
-        return {ENTITY_NAME_low}
 
-    raise HTTPException(
-        status_code=status.HTTP_404_NOT_FOUND,
-        detail=f"{ENTITY_NAME} id: '''
+    {ENTITY_NAME_low} = await {ENTITY_NAME_low}s_crud.get_{ENTITY_NAME_low}(session=session, {ENTITY_NAME_low}_id={ENTITY_NAME_low}_id)
+    if {ENTITY_NAME_low} is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"{ENTITY_NAME} id: '''
 content += "{"
 content += f"{ENTITY_NAME_low}_id"
 content += "} "
-content += '''not found!",
-    )
+content += f'''not found!")
 
+    return {ENTITY_NAME_low}
 
 '''
 

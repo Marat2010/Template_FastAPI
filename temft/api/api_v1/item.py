@@ -17,11 +17,11 @@ async def get_items(session: AsyncSession = Depends(db_helper.session_getter)):
     return item
 
 
-@router.get("/{item_id}/", response_model=ItemRead)
+@router.get("/{item_id}/",response_model=ItemRead)
 async def get_item(item: ItemRead = Depends(item_by_id)):
     return item
-
-
+    
+    
 @router.post("", response_model=ItemRead)
 async def create_item(item_create: ItemCreate,
                       session: AsyncSession = Depends(db_helper.session_getter)):
@@ -43,7 +43,7 @@ async def update_item_partial(item_update: ItemPatch,
                               item: ItemRead = Depends(item_by_id),
                               session: AsyncSession = Depends(db_helper.session_getter)):
     return await items_crud.update_item(
-        item_update=item_update,
+        item_update=item_update,        
         item=item,
         session=session,
         partial=True)
@@ -52,7 +52,7 @@ async def update_item_partial(item_update: ItemPatch,
 @router.delete("/{item_id}/", status_code=status.HTTP_204_NO_CONTENT)
 async def delete_item(item: ItemRead = Depends(item_by_id),
                       session: AsyncSession = Depends(db_helper.session_getter)) -> None:
-    await items_crud.delete_item( item=item, session=session)
+    await items_crud.delete_item(item=item, session=session)
 
 
 @router.get("/filter", response_model=list[ItemRead])
@@ -77,25 +77,14 @@ async def filter_items(
     if created_at_lt:
         time_filters['created_at__lt'] = created_at_lt
 
-    items = await items_crud.get_items_by_filters(
+    item = await items_crud.get_items_by_filters(
         session=session,
         filters=filters,
         time_filters=time_filters
     )
-    return items
+    return item
 
 
-# ==========================================================
 # ==========================================================
     # session: Annotated[AsyncSession, Depends(db_helper.session_getter)]
-# ==========================================================
-    # if updated_at_gt:
-    #     time_filters['updated_at__gt'] = updated_at_gt
-    # if updated_at_lt:
-    #     time_filters['updated_at__lt'] = updated_at_lt
-# ==========================================================
-# updated_at_gt: datetime | None = Query(None, description="Filter for updated_at greater than"),
-# updated_at_lt: datetime | None = Query(None, description="Filter for updated_at less than"),
-# ==========================================================
-    # if name is not None:
-
+    

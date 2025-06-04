@@ -9,9 +9,8 @@ ENTITY_NAME = sys.argv[1].capitalize()  # Получаем значение ENTI
 ENTITY_NAME_low = ENTITY_NAME.lower()
 
 content = f'''from datetime import datetime
-from typing import Annotated, Sequence
 
-from fastapi import APIRouter, Depends, status, HTTPException
+from fastapi import APIRouter, Depends, status, Query
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from crud import {ENTITY_NAME_low} as {ENTITY_NAME_low}s_crud
@@ -23,8 +22,7 @@ router = APIRouter()
 
 
 @router.get("", response_model=list[{ENTITY_NAME}Read])
-async def get_{ENTITY_NAME_low}s(session: Annotated[AsyncSession, Depends(db_helper.session_getter)]):
-    # session: AsyncSession = Depends(db_helper.session_getter),
+async def get_{ENTITY_NAME_low}s(session: AsyncSession = Depends(db_helper.session_getter)):
     {ENTITY_NAME_low} = await {ENTITY_NAME_low}s_crud.get_all_{ENTITY_NAME_low}(session=session)
     return {ENTITY_NAME_low}
 
@@ -34,17 +32,14 @@ content += "{"
 content += f"{ENTITY_NAME_low}_id"
 content += '}/",'
 content += f'''response_model={ENTITY_NAME}Read)
-async def get_{ENTITY_NAME_low}(
-    {ENTITY_NAME_low}: {ENTITY_NAME}Read = Depends({ENTITY_NAME_low}_by_id),
-):
+async def get_{ENTITY_NAME_low}({ENTITY_NAME_low}: {ENTITY_NAME}Read = Depends({ENTITY_NAME_low}_by_id)):
     return {ENTITY_NAME_low}
     
     
 @router.post("", response_model={ENTITY_NAME}Read)
-async def create_{ENTITY_NAME_low}(session: Annotated[AsyncSession, Depends(db_helper.session_getter)],
-                    {ENTITY_NAME_low}_create: {ENTITY_NAME}Create):
-    {ENTITY_NAME_low} = await {ENTITY_NAME_low}s_crud.create_{ENTITY_NAME_low}(session=session, {ENTITY_NAME_low}={ENTITY_NAME_low}_create)
-    return {ENTITY_NAME_low}
+async def create_{ENTITY_NAME_low}({ENTITY_NAME_low}_create: {ENTITY_NAME}Create,
+                      session: AsyncSession = Depends(db_helper.session_getter)):
+    return await {ENTITY_NAME_low}s_crud.create_{ENTITY_NAME_low}({ENTITY_NAME_low}={ENTITY_NAME_low}_create, session=session)
 
 
 @router.put("/'''
@@ -52,16 +47,13 @@ content += "{"
 content += f"{ENTITY_NAME_low}_id"
 content += '}/"'
 content += f''')
-async def update_{ENTITY_NAME_low}(
-    {ENTITY_NAME_low}_update: {ENTITY_NAME}Update,
-    {ENTITY_NAME_low}: {ENTITY_NAME}Read = Depends({ENTITY_NAME_low}_by_id),
-    session: AsyncSession = Depends(db_helper.session_getter),
-):
+async def update_{ENTITY_NAME_low}({ENTITY_NAME_low}_update: {ENTITY_NAME}Update,
+                      {ENTITY_NAME_low}: {ENTITY_NAME}Read = Depends({ENTITY_NAME_low}_by_id),
+                      session: AsyncSession = Depends(db_helper.session_getter)):
     return await {ENTITY_NAME_low}s_crud.update_{ENTITY_NAME_low}(
-        session=session,
-        {ENTITY_NAME_low}={ENTITY_NAME_low},
         {ENTITY_NAME_low}_update={ENTITY_NAME_low}_update,
-    )
+        {ENTITY_NAME_low}={ENTITY_NAME_low},
+        session=session)
 
 
 @router.patch("/'''
@@ -69,17 +61,14 @@ content += "{"
 content += f"{ENTITY_NAME_low}_id"
 content += '}/"'
 content += f''')
-async def update_{ENTITY_NAME_low}_partial(
-    {ENTITY_NAME_low}_update: {ENTITY_NAME}Patch,
-    {ENTITY_NAME_low}: {ENTITY_NAME}Read = Depends({ENTITY_NAME_low}_by_id),
-    session: AsyncSession = Depends(db_helper.session_getter),
-):
+async def update_{ENTITY_NAME_low}_partial({ENTITY_NAME_low}_update: {ENTITY_NAME}Patch,
+                              {ENTITY_NAME_low}: {ENTITY_NAME}Read = Depends({ENTITY_NAME_low}_by_id),
+                              session: AsyncSession = Depends(db_helper.session_getter)):
     return await {ENTITY_NAME_low}s_crud.update_{ENTITY_NAME_low}(
-        session=session,
+        {ENTITY_NAME_low}_update={ENTITY_NAME_low}_update,        
         {ENTITY_NAME_low}={ENTITY_NAME_low},
-        {ENTITY_NAME_low}_update={ENTITY_NAME_low}_update,
-        partial=True,
-    )
+        session=session,
+        partial=True)
 
 
 @router.delete("/'''
@@ -87,13 +76,46 @@ content += "{"
 content += f"{ENTITY_NAME_low}_id"
 content += '}/"'
 content += f''', status_code=status.HTTP_204_NO_CONTENT)
-async def delete_{ENTITY_NAME_low}(
-    {ENTITY_NAME_low}: {ENTITY_NAME}Read = Depends({ENTITY_NAME_low}_by_id),
-    session: AsyncSession = Depends(db_helper.session_getter),
-) -> None:
-    await {ENTITY_NAME_low}s_crud.delete_{ENTITY_NAME_low}(session=session, {ENTITY_NAME_low}={ENTITY_NAME_low})
+async def delete_{ENTITY_NAME_low}({ENTITY_NAME_low}: {ENTITY_NAME}Read = Depends({ENTITY_NAME_low}_by_id),
+                      session: AsyncSession = Depends(db_helper.session_getter)) -> None:
+    await {ENTITY_NAME_low}s_crud.delete_{ENTITY_NAME_low}({ENTITY_NAME_low}={ENTITY_NAME_low}, session=session)
 
 
+@router.get("/filter", response_model=list[{ENTITY_NAME}Read])
+async def filter_{ENTITY_NAME_low}s(
+        name: str | None = Query(None),
+        description: str | None = Query(None),
+        is_active: bool | None = Query(None),
+        created_at_gt: datetime | None = Query(None, description='Пример: "2025-05-24" или "2025-05-24 09:03:00"'),
+        created_at_lt: datetime | None = Query(None),
+        session: AsyncSession = Depends(db_helper.session_getter)):
+    filters = '''
+content += '''{}
+    if name:
+        filters['name'] = name
+    if description:
+        filters['description'] = description
+    if is_active is not None:
+        filters['is_active'] = is_active
+
+    time_filters = {}
+    if created_at_gt:
+        time_filters['created_at__gt'] = created_at_gt
+    if created_at_lt:
+        time_filters['created_at__lt'] = created_at_lt
+'''
+content += f'''
+    {ENTITY_NAME_low} = await {ENTITY_NAME_low}s_crud.get_items_by_filters(
+        session=session,
+        filters=filters,
+        time_filters=time_filters
+    )
+    return {ENTITY_NAME_low}
+
+
+# ==========================================================
+    # session: Annotated[AsyncSession, Depends(db_helper.session_getter)]
+    
 '''
 
 
