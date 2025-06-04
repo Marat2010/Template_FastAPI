@@ -32,5 +32,5 @@ if __name__ == '__main__':
         host=settings.run.host,
         port=settings.run.port,
         reload=True)
-    # uvicorn.run(main_app, host='0.0.0.0', port=8000)
+    # uvicorn.run(main_app, host='127.0.0.1', port=8000)
 
