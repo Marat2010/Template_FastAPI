@@ -10,6 +10,13 @@ class RunConfig(BaseModel):
     port: int = 8000
 
 
+class LogConfig(BaseModel):
+    LOGGER_NAME: str = "temft"
+    # LOG_LEVEL: str = "INFO"
+    LOG_LEVEL: str = "DEBUG"
+    LOG_FILE: str | None = "logs/app.log"
+
+
 class ApiV1Prefix(BaseModel):
     prefix: str = "/v1"
     item: str = "/item"
@@ -19,6 +26,8 @@ class ApiV1Prefix(BaseModel):
 class ApiPrefix(BaseModel):
     prefix: str = '/api'
     v1: ApiV1Prefix = ApiV1Prefix()
+    version: str = "1.01"
+    title: str = f"API project: {LogConfig().LOGGER_NAME.capitalize()}"
 
 
 class DatabaseConfig(BaseModel):
@@ -45,6 +54,7 @@ class Settings(BaseSettings):
         env_prefix="APP_CONFIG__",
     )
     run: RunConfig = RunConfig()
+    log: LogConfig = LogConfig()
     api: ApiPrefix = ApiPrefix()
     db: DatabaseConfig
 
