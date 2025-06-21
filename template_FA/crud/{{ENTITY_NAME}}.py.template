@@ -1,0 +1,74 @@
+from typing import Sequence
+
+from sqlalchemy import select
+from sqlalchemy.ext.asyncio import AsyncSession
+
+from api.api_v1.exceptions import {{ENTITY_NAME_CAMEL}}NameConflict
+from models import {{ENTITY_NAME_CAMEL}}
+from schemas.{{ENTITY_NAME}} import {{ENTITY_NAME_CAMEL}}Create, {{ENTITY_NAME_CAMEL}}Update, {{ENTITY_NAME_CAMEL}}Patch 
+
+from utils.filters import apply_filters
+
+
+async def get_all_{{ENTITY_NAME}}(session: AsyncSession) -> Sequence[{{ENTITY_NAME_CAMEL}}]:
+    stmt = select({{ENTITY_NAME_CAMEL}}).order_by({{ENTITY_NAME_CAMEL}}.id)
+    result = await session.scalars(stmt)
+    return result.all()
+
+
+async def get_{{ENTITY_NAME}}(session: AsyncSession, {{ENTITY_NAME}}_id: int) -> {{ENTITY_NAME_CAMEL}} | None:
+    return await session.get({{ENTITY_NAME_CAMEL}}, {{ENTITY_NAME}}_id)
+
+
+async def is_name_exists(session: AsyncSession,
+                         name: str,
+                         exclude_{{ENTITY_NAME}}_id: int | None = None) -> bool:
+    query = select({{ENTITY_NAME_CAMEL}}).where({{ENTITY_NAME_CAMEL}}.name == name)
+    if exclude_{{ENTITY_NAME}}_id is not None:
+        query = query.where({{ENTITY_NAME_CAMEL}}.id != exclude_{{ENTITY_NAME}}_id)
+    return bool(await session.scalar(query))
+    
+
+async def create_{{ENTITY_NAME}}({{ENTITY_NAME}}: {{ENTITY_NAME_CAMEL}}Create, session: AsyncSession) -> {{ENTITY_NAME_CAMEL}}:
+    # Проверка перед созданием
+    if await is_name_exists(session, {{ENTITY_NAME}}.name):
+        raise {{ENTITY_NAME_CAMEL}}NameConflict()
+
+    db_{{ENTITY_NAME}} = {{ENTITY_NAME_CAMEL}}(**{{ENTITY_NAME}}.model_dump())
+    session.add(db_{{ENTITY_NAME}})
+    await session.commit()
+    await session.refresh(db_{{ENTITY_NAME}})
+    return db_{{ENTITY_NAME}}
+
+
+async def update_{{ENTITY_NAME}}({{ENTITY_NAME}}_update: {{ENTITY_NAME_CAMEL}}Update | {{ENTITY_NAME_CAMEL}}Patch,
+                      {{ENTITY_NAME}}: {{ENTITY_NAME_CAMEL}},
+                      session: AsyncSession,
+                      partial: bool = False, ) -> {{ENTITY_NAME_CAMEL}}:
+
+    update_data = {{ENTITY_NAME}}_update.model_dump(exclude_unset=partial)
+
+    if "name" in update_data and await is_name_exists(session, update_data["name"], {{ENTITY_NAME}}.id):
+        raise {{ENTITY_NAME_CAMEL}}NameConflict()
+
+    for name, value in update_data.items():
+        setattr({{ENTITY_NAME}}, name, value)
+
+    await session.commit()
+    return {{ENTITY_NAME}}
+
+
+async def delete_{{ENTITY_NAME}}({{ENTITY_NAME}}: {{ENTITY_NAME_CAMEL}}, session: AsyncSession) -> None:
+    await session.delete({{ENTITY_NAME}})
+    await session.commit()
+
+
+async def get_{{ENTITY_NAME}}s_by_filters(
+    session: AsyncSession,
+    filters: dict | None = None,
+    time_filters: dict | None = None
+) -> Sequence[{{ENTITY_NAME_CAMEL}}]:
+    stmt = apply_filters({{ENTITY_NAME_CAMEL}}, filters, time_filters)
+    result = await session.scalars(stmt)
+    return result.all()
+    

@@ -1,0 +1,91 @@
+# template_FA/api/api_v1/{{ENTITY_NAME}}.py.template
+from datetime import datetime
+
+from fastapi import APIRouter, Depends, status, Query
+from sqlalchemy.ext.asyncio import AsyncSession
+
+from crud import {{ENTITY_NAME}} as {{ENTITY_NAME}}_crud
+from .dependencies import {{ENTITY_NAME}}_by_id
+from models import db_helper
+from schemas.{{ENTITY_NAME}} import {{ENTITY_NAME_CAMEL}}Read, {{ENTITY_NAME_CAMEL}}Create, {{ENTITY_NAME_CAMEL}}Update, {{ENTITY_NAME_CAMEL}}Patch
+
+router = APIRouter()
+
+
+@router.get("", response_model=list[{{ENTITY_NAME_CAMEL}}Read])
+async def get_{{ENTITY_NAME}}s(session: AsyncSession = Depends(db_helper.session_getter)):
+    {{ENTITY_NAME}} = await {{ENTITY_NAME}}_crud.get_all_{{ENTITY_NAME}}(session=session)
+    return {{ENTITY_NAME}}
+
+
+@router.get("/{{{ENTITY_NAME}}_id}/", response_model={{ENTITY_NAME_CAMEL}}Read)
+async def get_{{ENTITY_NAME}}({{ENTITY_NAME}}: {{ENTITY_NAME_CAMEL}}Read = Depends({{ENTITY_NAME}}_by_id)):
+    return {{ENTITY_NAME}}
+    
+    
+@router.post("", response_model={{ENTITY_NAME_CAMEL}}Read)
+async def create_{{ENTITY_NAME}}({{ENTITY_NAME}}_create: {{ENTITY_NAME_CAMEL}}Create,
+                      session: AsyncSession = Depends(db_helper.session_getter)):
+    return await {{ENTITY_NAME}}_crud.create_{{ENTITY_NAME}}({{ENTITY_NAME}}={{ENTITY_NAME}}_create, session=session)
+
+
+@router.put("/{{{ENTITY_NAME}}_id}/")
+async def update_{{ENTITY_NAME}}({{ENTITY_NAME}}_update: {{ENTITY_NAME_CAMEL}}Update,
+                      {{ENTITY_NAME}}: {{ENTITY_NAME_CAMEL}}Read = Depends({{ENTITY_NAME}}_by_id),
+                      session: AsyncSession = Depends(db_helper.session_getter)):
+    return await {{ENTITY_NAME}}_crud.update_{{ENTITY_NAME}}(
+        {{ENTITY_NAME}}_update={{ENTITY_NAME}}_update,
+        {{ENTITY_NAME}}={{ENTITY_NAME}},
+        session=session)
+
+
+@router.patch("/{{{ENTITY_NAME}}_id}/")
+async def update_{{ENTITY_NAME}}_partial({{ENTITY_NAME}}_update: {{ENTITY_NAME_CAMEL}}Patch,
+                              {{ENTITY_NAME}}: {{ENTITY_NAME_CAMEL}}Read = Depends({{ENTITY_NAME}}_by_id),
+                              session: AsyncSession = Depends(db_helper.session_getter)):
+    return await {{ENTITY_NAME}}_crud.update_{{ENTITY_NAME}}(
+        {{ENTITY_NAME}}_update={{ENTITY_NAME}}_update,        
+        {{ENTITY_NAME}}={{ENTITY_NAME}},
+        session=session,
+        partial=True)
+
+
+@router.delete("/{{{ENTITY_NAME}}_id}/", status_code=status.HTTP_204_NO_CONTENT)
+async def delete_{{ENTITY_NAME}}({{ENTITY_NAME}}: {{ENTITY_NAME_CAMEL}}Read = Depends({{ENTITY_NAME}}_by_id),
+                      session: AsyncSession = Depends(db_helper.session_getter)) -> None:
+    await {{ENTITY_NAME}}_crud.delete_{{ENTITY_NAME}}({{ENTITY_NAME}}={{ENTITY_NAME}}, session=session)
+
+
+@router.get("/filter", response_model=list[{{ENTITY_NAME_CAMEL}}Read])
+async def filter_{{ENTITY_NAME}}s(
+        name: str | None = Query(None),
+        description: str | None = Query(None),
+        is_active: bool | None = Query(None),
+        created_at_gt: datetime | None = Query(None, description='Пример: "2025-05-24" или "2025-05-24 09:03:00"'),
+        created_at_lt: datetime | None = Query(None),
+        session: AsyncSession = Depends(db_helper.session_getter)):
+    filters = {}
+    if name:
+        filters['name'] = name
+    if description:
+        filters['description'] = description
+    if is_active is not None:
+        filters['is_active'] = is_active
+
+    time_filters = {}
+    if created_at_gt:
+        time_filters['created_at__gt'] = created_at_gt
+    if created_at_lt:
+        time_filters['created_at__lt'] = created_at_lt
+
+    {{ENTITY_NAME}} = await {{ENTITY_NAME}}_crud.get_{{ENTITY_NAME}}s_by_filters(
+        session=session,
+        filters=filters,
+        time_filters=time_filters
+    )
+    return {{ENTITY_NAME}}
+
+
+# ==========================================================
+    # session: Annotated[AsyncSession, Depends(db_helper.session_getter)]
+

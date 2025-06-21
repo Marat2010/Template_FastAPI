@@ -1,0 +1,16 @@
+# template_FA/api/api_v1/__init__.py.template
+from fastapi import APIRouter
+from core.config import settings
+
+from .{{ENTITY_NAME}} import router as {{ENTITY_NAME}}_router
+
+router = APIRouter(
+    prefix=settings.api.v1.prefix,
+)
+
+router.include_router(
+    {{ENTITY_NAME}}_router,
+    prefix=settings.api.v1.{{ENTITY_NAME}},
+    # prefix=settings.api.v1.{{ENTITY_NAME}}2,
+)
+

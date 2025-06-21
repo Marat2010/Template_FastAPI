@@ -1,0 +1,10 @@
+# template_FA/models/__init__.py.template
+__all__ = (
+    "db_helper",
+    "Base",
+    "{{ENTITY_NAME_CAMEL}}",
+)
+from .db_helper import db_helper
+from .base import Base
+from .{{ENTITY_NAME}} import {{ENTITY_NAME_CAMEL}}
+
