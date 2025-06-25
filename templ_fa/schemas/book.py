@@ -4,12 +4,12 @@ from pydantic import BaseModel, Field
 from pydantic import ConfigDict
 
 
-class BotBase(BaseModel):
+class BookBase(BaseModel):
     name: str = Field(..., min_length=1, max_length=100,
-                     example="Sample bot",
-                     description="Unique name of the bot")
+                     example="Sample book",
+                     description="Unique name of the book")
     description: str = Field(..., min_length=10,
-                           example="Description of bot",
+                           example="Description of book",
                            description="Detailed description")
     is_active: bool = Field(default=True,
                           description="Active status flag")
@@ -18,15 +18,15 @@ class BotBase(BaseModel):
                                         description="Configuration dictionary")
     startup_command: str = Field(...,
                                example="start.sh",
-                               description="Command to launch the bot")
+                               description="Command to launch the book")
 
 
-class BotCreate(BotBase):
-    """Schema for bot creation"""
+class BookCreate(BookBase):
+    """Schema for book creation"""
     model_config = ConfigDict(
         json_schema_extra={
             "example": {
-                "name": "New bot",
+                "name": "New book",
                 "description": "Detailed description",
                 "is_active": True,
                 "config": {"key": "value"},
@@ -36,12 +36,12 @@ class BotCreate(BotBase):
     )
 
 
-class BotUpdate(BotBase):
+class BookUpdate(BookBase):
     """Schema for PUT updates (all fields required)"""
     model_config = ConfigDict(
         json_schema_extra={
             "example": {
-                "name": "Updated bot",
+                "name": "Updated book",
                 "description": "Updated description",
                 "is_active": False,
                 "config": {"new_key": "new_value"},
@@ -51,12 +51,12 @@ class BotUpdate(BotBase):
     )
 
 
-class BotPatch(BaseModel):
+class BookPatch(BaseModel):
     """Schema for PATCH updates (all fields optional)"""
     model_config = ConfigDict(extra='forbid')
 
     name: str | None = Field(None, min_length=1, max_length=100,
-                            example="Updated bot")
+                            example="Updated book")
     description: str | None = Field(None, min_length=10,
                                   example="Updated description")
     is_active: bool | None = Field(None, example=False)
@@ -66,14 +66,14 @@ class BotPatch(BaseModel):
                                       example="stop.sh")
 
 
-class BotRead(BotBase):
-    """Schema for bot read operations"""
+class BookRead(BookBase):
+    """Schema for book read operations"""
     model_config = ConfigDict(
         from_attributes=True,
         json_schema_extra={
             "example": {
                 "id": 1,
-                "name": "Sample bot",
+                "name": "Sample book",
                 "description": "Detailed description",
                 "is_active": True,
                 "config": {"key": "value"},

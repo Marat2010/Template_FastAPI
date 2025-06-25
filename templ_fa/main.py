@@ -48,7 +48,7 @@ app = FastAPI(
     # docs_url=f"{settings.api.prefix}/docs",
     # redoc_url=f"{settings.api.prefix}/redoc"
 )
-app.include_router(api_router, tags=["Bot"])
+app.include_router(api_router, tags=["Book"])
 
 
 # Добавьте middleware к приложению

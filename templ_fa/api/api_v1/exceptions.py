@@ -2,10 +2,10 @@
 from fastapi import HTTPException, status
 
 
-class BotNameConflict(HTTPException):
+class BookNameConflict(HTTPException):
     def __init__(self):
         super().__init__(
             status_code=status.HTTP_409_CONFLICT,
-            detail="Bot with this name already exists"
+            detail="Book with this name already exists"
         )
 

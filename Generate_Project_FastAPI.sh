@@ -40,11 +40,18 @@ select_python_version() {
 # Database credentials setup
 setup_database_credentials() {
     echo
+    echo "========================================================================="
+    echo "Введите данные для своего Postgres сервера, если будете использовать его,"
+    echo "иначе, ниже будет предложено создать Postgres сервер в докере "
+    echo "========================================================================="
     read -rp "Enter Postgres username [${USER}]: " DB_USER
     DB_USER="${DB_USER:-$USER}"
 
     read -rp "Enter Postgres password [1]: " DB_PASSWORD
     DB_PASSWORD="${DB_PASSWORD:-1}"
+
+    read -rp "Enter Postgres host [localhost]: " DB_HOST
+    DB_HOST="${DB_HOST:-localhost}"
 
     read -rp "Enter Postgres port [5434]: " DB_PORT
     DB_PORT="${DB_PORT:-5434}"
@@ -52,6 +59,7 @@ setup_database_credentials() {
     echo "Database credentials:"
     echo " - User: $DB_USER"
     echo " - Password: $DB_PASSWORD"
+    echo " - Host: $DB_HOST"
     echo " - Port: $DB_PORT"
 }
 
@@ -60,11 +68,11 @@ generate_env_files() {
     echo "=== Generating .env files ==="
 
     # Template with placeholders
-    sed "s/{{DB_USER}}/user/g; s/{{DB_PASSWORD}}/pwd/g; s/{{DB_PORT}}/5432/g; s/{{PROJECT_NAME}}/db_name/g" \
+    sed "s/{{DB_USER}}/user/g; s/{{DB_PASSWORD}}/pwd/g; s/{{DB_HOST}}/localhost/g; s/{{DB_PORT}}/5432/g; s/{{PROJECT_NAME}}/db_name/g" \
         "$FULL_TEMPLATES_DIR/.env.template" > "$PROJECT_DIR/.env.template"
 
     # Actual .env with real credentials
-    sed "s/{{DB_USER}}/$DB_USER/g; s/{{DB_PASSWORD}}/$DB_PASSWORD/g; s/{{DB_PORT}}/$DB_PORT/g; s/{{PROJECT_NAME}}/$PROJECT_NAME/g" \
+    sed "s/{{DB_USER}}/$DB_USER/g; s/{{DB_PASSWORD}}/$DB_PASSWORD/g; s/{{DB_HOST}}/$DB_HOST/g; s/{{DB_PORT}}/$DB_PORT/g; s/{{PROJECT_NAME}}/$PROJECT_NAME/g" \
         "$FULL_TEMPLATES_DIR/.env.template" > "$PROJECT_DIR/.env"
 }
 
@@ -74,11 +82,16 @@ setup_docker() {
     case "${choice:-Y}" in
         [nN])
             echo "Skipping Docker setup"
+            echo "========================================================================="
+            echo "Не забудьте создать БД '$PROJECT_NAME' вручную на вашем Postgres сервере."
+            echo "Если БД с таким именем не будет, то Alembic не сможет создать таблицы"
+            echo "========================================================================="
+            read -rp "Для продолжения нажмите 'Enter'"
             return
             ;;
         *)
             echo "=== Setting up Docker ==="
-            sed "s/{{PROJECT_NAME}}/$PROJECT_NAME/g; s/{{DB_USER}}/$DB_USER/g; s/{{DB_PASSWORD}}/$DB_PASSWORD/g" \
+            sed "s/{{PROJECT_NAME}}/$PROJECT_NAME/g; s/{{DB_USER}}/$DB_USER/g; s/{{DB_PASSWORD}}/$DB_PASSWORD/g; s/{{DB_PORT}}/$DB_PORT/g" \
                 "$FULL_TEMPLATES_DIR/docker-compose.yml.template" > "$PROJECT_DIR/docker-compose.yml"
 
             (cd "$PROJECT_DIR" && docker compose up -d pg)

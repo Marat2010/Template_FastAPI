@@ -1,4 +1,4 @@
-# template_FA/models/bot.py.template
+# template_FA/models/book.py.template
 from datetime import datetime
 from sqlalchemy import JSON, func, UniqueConstraint
 from sqlalchemy.orm import Mapped, mapped_column
@@ -7,7 +7,7 @@ from .base import Base
 from .mixins.int_id_pk import IntIdPkMixin
 
 
-class Bot(IntIdPkMixin, Base):
+class Book(IntIdPkMixin, Base):
     name: Mapped[str] = mapped_column(unique=True)
     description: Mapped[str] = mapped_column(nullable=True)
     is_active: Mapped[bool] = mapped_column()

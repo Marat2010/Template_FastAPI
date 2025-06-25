@@ -1,63 +1,63 @@
-# template_FA/api/api_v1/bot.py.template
+# template_FA/api/api_v1/book.py.template
 from datetime import datetime
 
 from fastapi import APIRouter, Depends, status, Query
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from crud import bot as bot_crud
-from .dependencies import bot_by_id
+from crud import book as book_crud
+from .dependencies import book_by_id
 from models import db_helper
-from schemas.bot import BotRead, BotCreate, BotUpdate, BotPatch
+from schemas.book import BookRead, BookCreate, BookUpdate, BookPatch
 
 router = APIRouter()
 
 
-@router.get("", response_model=list[BotRead])
-async def get_bots(session: AsyncSession = Depends(db_helper.session_getter)):
-    bot = await bot_crud.get_all_bot(session=session)
-    return bot
+@router.get("", response_model=list[BookRead])
+async def get_books(session: AsyncSession = Depends(db_helper.session_getter)):
+    book = await book_crud.get_all_book(session=session)
+    return book
 
 
-@router.get("/{bot_id}/", response_model=BotRead)
-async def get_bot(bot: BotRead = Depends(bot_by_id)):
-    return bot
+@router.get("/{book_id}/", response_model=BookRead)
+async def get_book(book: BookRead = Depends(book_by_id)):
+    return book
     
     
-@router.post("", response_model=BotRead)
-async def create_bot(bot_create: BotCreate,
+@router.post("", response_model=BookRead)
+async def create_book(book_create: BookCreate,
                       session: AsyncSession = Depends(db_helper.session_getter)):
-    return await bot_crud.create_bot(bot=bot_create, session=session)
+    return await book_crud.create_book(book=book_create, session=session)
 
 
-@router.put("/{bot_id}/")
-async def update_bot(bot_update: BotUpdate,
-                      bot: BotRead = Depends(bot_by_id),
+@router.put("/{book_id}/")
+async def update_book(book_update: BookUpdate,
+                      book: BookRead = Depends(book_by_id),
                       session: AsyncSession = Depends(db_helper.session_getter)):
-    return await bot_crud.update_bot(
-        bot_update=bot_update,
-        bot=bot,
+    return await book_crud.update_book(
+        book_update=book_update,
+        book=book,
         session=session)
 
 
-@router.patch("/{bot_id}/")
-async def update_bot_partial(bot_update: BotPatch,
-                              bot: BotRead = Depends(bot_by_id),
+@router.patch("/{book_id}/")
+async def update_book_partial(book_update: BookPatch,
+                              book: BookRead = Depends(book_by_id),
                               session: AsyncSession = Depends(db_helper.session_getter)):
-    return await bot_crud.update_bot(
-        bot_update=bot_update,        
-        bot=bot,
+    return await book_crud.update_book(
+        book_update=book_update,        
+        book=book,
         session=session,
         partial=True)
 
 
-@router.delete("/{bot_id}/", status_code=status.HTTP_204_NO_CONTENT)
-async def delete_bot(bot: BotRead = Depends(bot_by_id),
+@router.delete("/{book_id}/", status_code=status.HTTP_204_NO_CONTENT)
+async def delete_book(book: BookRead = Depends(book_by_id),
                       session: AsyncSession = Depends(db_helper.session_getter)) -> None:
-    await bot_crud.delete_bot(bot=bot, session=session)
+    await book_crud.delete_book(book=book, session=session)
 
 
-@router.get("/filter", response_model=list[BotRead])
-async def filter_bots(
+@router.get("/filter", response_model=list[BookRead])
+async def filter_books(
         name: str | None = Query(None),
         description: str | None = Query(None),
         is_active: bool | None = Query(None),
@@ -78,12 +78,12 @@ async def filter_bots(
     if created_at_lt:
         time_filters['created_at__lt'] = created_at_lt
 
-    bot = await bot_crud.get_bots_by_filters(
+    book = await book_crud.get_books_by_filters(
         session=session,
         filters=filters,
         time_filters=time_filters
     )
-    return bot
+    return book
 
 
 # ==========================================================

@@ -19,7 +19,7 @@ class LogConfig(BaseModel):
 
 class ApiV1Prefix(BaseModel):
     prefix: str = "/v1"
-    bot: str = "/bot"
+    book: str = "/book"
     # new_entity: str = "/new_entity"
 
 

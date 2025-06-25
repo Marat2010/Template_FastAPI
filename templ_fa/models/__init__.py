@@ -2,9 +2,9 @@
 __all__ = (
     "db_helper",
     "Base",
-    "Bot",
+    "Book",
 )
 from .db_helper import db_helper
 from .base import Base
-from .bot import Bot
+from .book import Book
 
