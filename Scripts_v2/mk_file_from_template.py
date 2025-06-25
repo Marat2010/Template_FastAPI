@@ -27,13 +27,14 @@ def process_template(
         output_path.write_text(content, encoding='utf-8')
         print(f"[OK] Файл {output_path} создан!")
     except Exception as e:
-        print(f"[ERROR] Ошибка при обработке {template_path}: {e}")
+        print(f"\n===[ERROR] Ошибка при обработке {template_path}: {e}===\n")
 
 
 def main():
     if len(sys.argv) < 3:
         print(
-            "Использование: python mk_file_from_template.py <ENTITY_NAME> <TEMPLATE_RELATIVE_PATH> [PROJECT_DIR] [TEMPLATES_DIR] [PROJECT_NAME] [PYTHON_VERSION]")
+            "Использование: python mk_file_from_template.py <ENTITY_NAME> <TEMPLATE_RELATIVE_PATH>"
+            " [PROJECT_DIR] [TEMPLATES_DIR] [PROJECT_NAME] [PYTHON_VERSION] [DB_USER] [DB_PASSWORD]")
         sys.exit(1)
 
     # Парсим аргументы
@@ -43,7 +44,9 @@ def main():
         'project_dir': sys.argv[3] if len(sys.argv) > 3 else ".",
         'templates_dir': sys.argv[4] if len(sys.argv) > 4 else "template_FA",
         'project_name': sys.argv[5] if len(sys.argv) > 5 else "templ_fa",
-        'python_version': sys.argv[6] if len(sys.argv) > 6 else "3.10"
+        'python_version': sys.argv[6] if len(sys.argv) > 6 else "3.10",
+        'db_user': sys.argv[7] if len(sys.argv) > 7 else "marat",
+        'db_password': sys.argv[8] if len(sys.argv) > 8 else "1"
     }
 
     # Нормализуем имя сущности
@@ -57,7 +60,9 @@ def main():
         '{{ENTITY_NAME}}': entity_name,
         '{{ENTITY_NAME_CAMEL}}': entity_name_camel,
         '{{PROJECT_NAME}}': args['project_name'],
-        '{{PYTHON_VERSION}}': args['python_version']
+        '{{PYTHON_VERSION}}': args['python_version'],
+        '{{DB_USER}}': args['db_user'],
+        '{{DB_PASSWORD}}': args['db_password']
     }
 
     # Обрабатываем шаблон
