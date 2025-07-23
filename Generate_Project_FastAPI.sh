@@ -1,10 +1,10 @@
 #!/bin/bash
 
 # --- Constants ---
-DEFAULT_PROJECT_NAME="templ_fa"
+DEFAULT_PROJECT_NAME="proj_fa"
 DEFAULT_ENTITY_NAME="book"
 TEMPLATES_DIR="template_FA"
-SCRIPTS_DIR="Scripts_v2"
+SCRIPTS_DIR="Scripts"
 
 # --- Functions ---
 
@@ -83,66 +83,59 @@ setup_database_connection() {
     DB_NAME="${DB_NAME:-$PROJECT_NAME}"
 
     if [ $db_type -eq 1 ]; then
-        # Existing server (остаётся без изменений)
-        ...
-    else
-        # Настройка Docker
-        DB_HOST="postgres"  # Важно: используем имя сервиса для внутреннего доступа
-        DB_PORT="5432"
+        # Existing server
+        read -rp "Введите хост Postgres [localhost]: " DB_HOST
+        DB_HOST="${DB_HOST:-localhost}"
 
-        read -rp "Введите внешний порт для Docker Postgres [5434]: " EXTERNAL_DB_PORT
-        EXTERNAL_DB_PORT="${EXTERNAL_DB_PORT:-5434}"
+        read -rp "Введите порт Postgres [5432]: " DB_PORT
+        DB_PORT="${DB_PORT:-5432}"
 
-        # 1. Удаляем старый контейнер
-        if docker ps -a --format '{{.Names}}' | grep -q "^${PROJECT_NAME}-postgres$"; then
-            echo "Удаляем старый контейнер Postgres..."
-            docker rm -f "${PROJECT_NAME}-postgres" >/dev/null
-            docker volume rm "${PROJECT_NAME}_pg_data" >/dev/null 2>&1 || true
+        echo "Проверка подключения к серверу..."
+        if ! pg_isready -h "$DB_HOST" -p "$DB_PORT" -U "$DB_USER"; then
+            echo "Ошибка: Не удалось подключиться к Postgres серверу!" >&2
+            exit 1
         fi
 
-        # 2. Генерируем docker-compose.yml
-        cat > "$PROJECT_DIR/docker-compose.yml" <<EOL
-version: '3.8'
+        echo "Проверка существования базы данных..."
+        if ! PGPASSWORD="$DB_PASSWORD" psql -h "$DB_HOST" -p "$DB_PORT" -U "$DB_USER" -lqt | cut -d \| -f 1 | grep -qw "$DB_NAME"; then
+            echo "База данных '$DB_NAME' не существует. Создать её? [Y/n]"
+            read -r create_db
+            if [[ "$create_db" =~ ^[Nn]$ ]]; then
+                echo "Необходимо создать БД вручную перед продолжением"
+                exit 1
+            else
+                PGPASSWORD="$DB_PASSWORD" createdb -h "$DB_HOST" -p "$DB_PORT" -U "$DB_USER" "$DB_NAME"
+            fi
+        fi
+    else
+        # Docker setup
+        DB_HOST="localhost"
+        read -rp "Введите порт для Docker Postgres [5434]: " DB_PORT
+        DB_PORT="${DB_PORT:-5434}"
 
-services:
-  postgres:
-    image: postgres:17.0-alpine
-    container_name: "${PROJECT_NAME}-postgres"
-    environment:
-      POSTGRES_DB: "${DB_NAME}"
-      POSTGRES_USER: "${DB_USER}"
-      POSTGRES_PASSWORD: "${DB_PASSWORD}"
-    ports:
-      - "${EXTERNAL_DB_PORT}:5432"
-    volumes:
-      - pg_data:/var/lib/postgresql/data
-    healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${DB_USER} -d ${DB_NAME}"]
-      interval: 5s
-      timeout: 5s
-      retries: 10
-    restart: unless-stopped
 
-volumes:
-  pg_data:
-    name: "${PROJECT_NAME}_pg_data"
-EOL
+        # Убедимся, что DB_NAME не пустое
+        DB_NAME="${DB_NAME:-$PROJECT_NAME}"
 
-        # 3. Запускаем контейнер
-        echo "Запускаем Postgres в Docker..."
-        (cd "$PROJECT_DIR" && docker compose up -d)
+#        # Generate docker-compose.yml
+#        sed "s/{{DB_USER}}/$DB_USER/g; s/{{DB_PASSWORD}}/$DB_PASSWORD/g; s/{{DB_PORT}}/$DB_PORT/g; s/{{DB_NAME}}/$DB_NAME/g" \
+#            "$FULL_TEMPLATES_DIR/docker-compose.yml.template" > "$PROJECT_DIR/docker-compose.yml"
 
-        # 4. Ждем инициализации
-        echo "Ожидаем готовности Postgres (15-30 сек)..."
-        local container_name="${PROJECT_NAME}-postgres"
+        # Генерация docker-compose.yml
+        sed -e "s/{{DB_USER}}/$DB_USER/g" \
+            -e "s/{{DB_PASSWORD}}/$DB_PASSWORD/g" \
+            -e "s/{{DB_PORT}}/$DB_PORT/g" \
+            -e "s/{{DB_NAME}}/$DB_NAME/g" \
+            -e "s/{{PROJECT_NAME}}/$PROJECT_NAME/g" \
+            "$FULL_TEMPLATES_DIR/docker-compose.yml.template" > "$PROJECT_DIR/docker-compose.yml"
 
-        timeout 30s bash -c "until docker inspect -f '{{.State.Health.Status}}' \"$container_name\" | grep -q \"healthy\"; do sleep 2; echo 'Ожидание...'; done" || {
-            echo "Ошибка: Postgres не запустился. Проверьте логи:"
-            docker logs "$container_name"
-            exit 1
-        }
+        # Start container
+        (cd "$PROJECT_DIR" && docker compose up -d pg)
 
-        echo "Готово! База данных '$DB_NAME' создана."
+        # Wait for DB to be ready
+#        echo "Ожидание запуска Postgres в Docker..."
+        echo "Ожидаем инициализации Postgres (5 сек)..."
+        sleep 5
     fi
 
     echo
@@ -151,11 +144,10 @@ EOL
     echo "--------------------------------------------------------------------"
     echo " Хост:        $DB_HOST"
     echo " Порт:        $DB_PORT"
-    [ $db_type -eq 2 ] && echo " Внешний порт: $EXTERNAL_DB_PORT"
     echo " База данных: $DB_NAME"
     echo " Пользователь: $DB_USER"
     echo " Пароль:      $DB_PASSWORD"
-    [ $db_type -eq 2 ] && echo " (Docker контейнер: ${PROJECT_NAME}-pg)"
+    [ $db_type -eq 2 ] && echo " (Docker контейнер)"
     echo "===================================================================="
 }
 
@@ -178,25 +170,20 @@ generate_env_files() {
 setup_alembic() {
     echo "=== Initializing Alembic ==="
 
-    # Сначала создаем .env файл с правильными настройками
-    cat > "$PROJECT_DIR/.env" <<EOL
-DB_USER=${DB_USER}
-DB_PASSWORD=${DB_PASSWORD}
-DB_HOST=${DB_HOST}
-DB_PORT=${DB_PORT}
-DB_NAME=${DB_NAME}
-EOL
+    # Initialize alembic in project directory
+    (cd "$PROJECT_DIR" && uv run alembic init -t async alembic)
 
-    # Инициализируем Alembic
-    (cd "$PROJECT_DIR" && \
-     uv run alembic init -t async alembic && \
-     cp "$FULL_TEMPLATES_DIR/alembic.ini" "$PROJECT_DIR/" && \
-     cp -R "$FULL_TEMPLATES_DIR/alembic" "$PROJECT_DIR/")
+    # Backup original files
+    cp "$PROJECT_DIR/alembic.ini" "$PROJECT_DIR/alembic.ini.bak"
+    cp "$PROJECT_DIR/alembic/env.py" "$PROJECT_DIR/alembic/env.py.bak"
 
-    # Применяем миграции
-    (cd "$PROJECT_DIR" && \
-     uv run alembic revision --autogenerate -m "init" && \
-     uv run alembic upgrade head)
+    # Apply our templates
+    cp "$FULL_TEMPLATES_DIR/alembic.ini" "$PROJECT_DIR/"
+    cp -R "$FULL_TEMPLATES_DIR/alembic" "$PROJECT_DIR/"
+
+    # Generate and apply migrations
+    (cd "$PROJECT_DIR" && uv run alembic revision --autogenerate -m "init")
+    (cd "$PROJECT_DIR" && uv run alembic upgrade head)
 }
 
 # --- Main Script ---

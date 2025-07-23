@@ -1,22 +1,22 @@
 services:
-  postgres:
+  pg:
     image: postgres:17.0-alpine
-    container_name: "${PROJECT_NAME}-postgres"
+    container_name: {{PROJECT_NAME}}-pg
     environment:
-      POSTGRES_DB: "${DB_NAME}"
-      POSTGRES_USER: "${DB_USER}"
-      POSTGRES_PASSWORD: "${DB_PASSWORD}"
+      POSTGRES_DB: {{DB_NAME}}
+      POSTGRES_USER: {{DB_USER}}
+      POSTGRES_PASSWORD: {{DB_PASSWORD}}
     ports:
-      - "${EXTERNAL_DB_PORT}:5432"
+      - {{DB_PORT}}:5432
     volumes:
       - pg_data:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${DB_USER} -d ${DB_NAME}"]
+      test: ["CMD-SHELL", "pg_isready -U {{DB_USER}} -d {{DB_NAME}}"]
       interval: 5s
       timeout: 5s
       retries: 10
-    restart: unless-stopped
 
 volumes:
   pg_data:
-    name: "${PROJECT_NAME}_pg_data"
+    name: {{PROJECT_NAME}}_pg_data
+
