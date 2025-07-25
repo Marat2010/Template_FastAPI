@@ -1,7 +1,8 @@
+# Файл docker-compose.yml.template
 services:
   pg:
     image: postgres:17.0-alpine
-    container_name: {{PROJECT_NAME}}-pg
+    container_name: {{PROJECT_NAME}}_pg
     environment:
       POSTGRES_DB: {{DB_NAME}}
       POSTGRES_USER: {{DB_USER}}

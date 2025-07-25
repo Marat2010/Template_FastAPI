@@ -1,4 +1,8 @@
 #!/bin/bash
+set -e
+#set -x  # Добавляем для отладки (покажет какие команды выполняются)
+
+# Файл Generate_Project_FastAPI.sh
 
 # --- Constants ---
 DEFAULT_PROJECT_NAME="proj_fa"
@@ -6,12 +10,46 @@ DEFAULT_ENTITY_NAME="book"
 TEMPLATES_DIR="template_FA"
 SCRIPTS_DIR="Scripts"
 
+# --- Логирование ---
+LOG_DIR="Logs"
+mkdir -p "$LOG_DIR"
+LOG_FILE="${LOG_DIR}/generate_project_$(date '+%Y%m%d_%H%M%S').log"
+
+log() {
+    local message="$1"
+    local timestamp
+    timestamp=$(date '+%Y-%m-%d %H:%M:%S')
+    echo "${timestamp} - ${message}" | tee -a "$LOG_FILE"
+}
+
+# Первая запись в лог
+log "Скрипт запущен"
+
 # --- Functions ---
+
+# Проверка зависимостей
+check_dependencies() {
+    local deps=("python3" "docker" "psql" "pg_isready" "uv")
+    for dep in "${deps[@]}"; do
+        if ! command -v "$dep" &> /dev/null; then
+            echo "Error: Required tool '$dep' is not installed" >&2
+            exit 1
+        fi
+    done
+}
 
 # Validate entity name (letters, numbers, underscores, hyphens)
 validate_entity_name() {
     if [[ ! "$1" =~ ^[a-zA-Z0-9_-]+$ ]]; then
         echo "Error: Entity name can only contain letters, numbers, hyphens and underscores" >&2
+        exit 1
+    fi
+}
+
+# Validate project name
+validate_project_name() {
+    if [[ ! "$1" =~ ^[a-zA-Z][a-zA-Z0-9_-]{1,63}$ ]]; then
+        echo "Error: Invalid project name. Must start with letter, 2-64 chars, only a-z, 0-9, _-" >&2
         exit 1
     fi
 }
@@ -53,11 +91,13 @@ select_database_type() {
         case "${db_choice}" in
             1)
                 echo "Используем существующий Postgres сервер"
-                return 1
+                DB_TYPE=1  # Явно сохраняем выбор в переменную
+                return 0
                 ;;
             2)
                 echo "Создаем Postgres сервер в Docker"
-                return 2
+                DB_TYPE=2  # Явно сохраняем выбор в переменную
+                return 0
                 ;;
             *)
                 echo "Неверный выбор, попробуйте снова"
@@ -69,7 +109,6 @@ select_database_type() {
 # Database connection setup
 setup_database_connection() {
     select_database_type
-    db_type=$?
 
     # Common credentials
     echo
@@ -82,7 +121,7 @@ setup_database_connection() {
     read -rp "Введите имя базы данных [${PROJECT_NAME}]: " DB_NAME
     DB_NAME="${DB_NAME:-$PROJECT_NAME}"
 
-    if [ $db_type -eq 1 ]; then
+    if [ $DB_TYPE -eq 1 ]; then
         # Existing server
         read -rp "Введите хост Postgres [localhost]: " DB_HOST
         DB_HOST="${DB_HOST:-localhost}"
@@ -113,13 +152,8 @@ setup_database_connection() {
         read -rp "Введите порт для Docker Postgres [5434]: " DB_PORT
         DB_PORT="${DB_PORT:-5434}"
 
-
         # Убедимся, что DB_NAME не пустое
         DB_NAME="${DB_NAME:-$PROJECT_NAME}"
-
-#        # Generate docker-compose.yml
-#        sed "s/{{DB_USER}}/$DB_USER/g; s/{{DB_PASSWORD}}/$DB_PASSWORD/g; s/{{DB_PORT}}/$DB_PORT/g; s/{{DB_NAME}}/$DB_NAME/g" \
-#            "$FULL_TEMPLATES_DIR/docker-compose.yml.template" > "$PROJECT_DIR/docker-compose.yml"
 
         # Генерация docker-compose.yml
         sed -e "s/{{DB_USER}}/$DB_USER/g" \
@@ -129,13 +163,26 @@ setup_database_connection() {
             -e "s/{{PROJECT_NAME}}/$PROJECT_NAME/g" \
             "$FULL_TEMPLATES_DIR/docker-compose.yml.template" > "$PROJECT_DIR/docker-compose.yml"
 
+        # Проверка существования контейнера
+        if docker ps -a --format '{{.Names}}' | grep -q "${PROJECT_NAME}_pg"; then
+            read -rp "Docker контейнер с именем '${PROJECT_NAME}_pg' уже существует. Пересоздать? [y/N] " recreate
+            if [[ "$recreate" =~ ^[Yy]$ ]]; then
+#                docker rm -f "${PROJECT_NAME}_pg"
+                docker rm -f -v "${PROJECT_NAME}_pg"
+                docker volume rm "${PROJECT_NAME}_pg_data"
+                docker network rm "${PROJECT_NAME}_default"
+            else
+                echo "Используем существующий контейнер"
+                return
+            fi
+        fi
+
         # Start container
         (cd "$PROJECT_DIR" && docker compose up -d pg)
 
         # Wait for DB to be ready
-#        echo "Ожидание запуска Postgres в Docker..."
-        echo "Ожидаем инициализации Postgres (5 сек)..."
-        sleep 5
+        echo "Ожидаем инициализации Postgres (2 сек)..."
+        sleep 2
     fi
 
     echo
@@ -147,7 +194,7 @@ setup_database_connection() {
     echo " База данных: $DB_NAME"
     echo " Пользователь: $DB_USER"
     echo " Пароль:      $DB_PASSWORD"
-    [ $db_type -eq 2 ] && echo " (Docker контейнер)"
+    [ $DB_TYPE -eq 2 ] && echo " (Docker контейнер)"
     echo "===================================================================="
 }
 
@@ -164,14 +211,23 @@ generate_env_files() {
         "$FULL_TEMPLATES_DIR/.env.template" > "$PROJECT_DIR/.env"
 }
 
-#===============================
-
 # Alembic initialization
 setup_alembic() {
+    log "Начало инициализации Alembic"
     echo "=== Initializing Alembic ==="
 
+    # Жёстко удаляем папку, если существует
+    local alembic_dir="$PROJECT_DIR/alembic"
+    if [ -d "$alembic_dir" ]; then
+        echo "Удаляем существующую папку alembic..."
+        rm -rf "$alembic_dir"
+    fi
+
     # Initialize alembic in project directory
-    (cd "$PROJECT_DIR" && uv run alembic init -t async alembic)
+    (cd "$PROJECT_DIR" && uv run alembic init -t async alembic) || {
+        echo "Ошибка инициализации Alembic" >&2
+        return 1
+    }
 
     # Backup original files
     cp "$PROJECT_DIR/alembic.ini" "$PROJECT_DIR/alembic.ini.bak"
@@ -184,9 +240,35 @@ setup_alembic() {
     # Generate and apply migrations
     (cd "$PROJECT_DIR" && uv run alembic revision --autogenerate -m "init")
     (cd "$PROJECT_DIR" && uv run alembic upgrade head)
+
+    log "Alembic успешно настроен"
 }
 
+# Вывод итогов
+show_summary() {
+    echo
+    echo "===================================================================="
+    echo " Проект успешно создан!"
+    echo "--------------------------------------------------------------------"
+    echo " Имя проекта:   $PROJECT_NAME"
+    echo " Основная сущность: $ENTITY_NAME"
+    echo " Каталог проекта: $(realpath "$PROJECT_DIR")"
+    echo " Python версия:  $PYTHON_VERSION"
+    echo
+    echo " Для запуска:"
+    echo "   cd $PROJECT_NAME"
+#    [ $DB_TYPE -eq 2 ] && echo "   docker compose up -d"
+    echo "   uv run main.py"
+    echo "===================================================================="
+}
+
+
+#===============================
 # --- Main Script ---
+
+# 0. Проверка зависимостей
+check_dependencies
+log "Проверка зависимостей прошла (OK)"
 
 # 1. Get entity name
 if [ -z "$1" ]; then
@@ -200,14 +282,17 @@ validate_entity_name "$ENTITY_NAME"
 # 2. Get project name
 read -rp "Enter project name [$DEFAULT_PROJECT_NAME]: " PROJECT_NAME
 PROJECT_NAME="${PROJECT_NAME:-$DEFAULT_PROJECT_NAME}"
+validate_project_name "$PROJECT_NAME"
 
 # 3. Create project directory
 PROJECT_DIR="$PROJECT_NAME"
 mkdir -p "$PROJECT_DIR" || { echo "Failed to create project directory"; exit 1; }
+log "Создана папка проекта: $PROJECT_NAME"
 
 # 4. Select Python version
 PYTHON_VERSION=$(select_python_version)
 echo "Selected Python version: $PYTHON_VERSION"
+log "Выбрана Python версия: $PYTHON_VERSION"
 
 # 5. Set paths
 SCRIPT_DIR="$(dirname "$0")"
@@ -217,6 +302,7 @@ FULL_SCRIPTS_DIR="$SCRIPT_DIR/$SCRIPTS_DIR"
 # 6. Database setup
 setup_database_connection
 generate_env_files
+log "База данных настроена: host=$DB_HOST, port=$DB_PORT"
 
 # 7. Generate project files
 echo "=== Generating project files ==="
@@ -264,121 +350,21 @@ done
 # 8. Initialize Alembic
 setup_alembic
 
-echo "=== Project setup complete ==="
-echo "Project directory: $PROJECT_DIR"
+# 9. Вывод итогов
+show_summary
+
+#echo "=== Project setup complete ==="
+#echo "Project directory: $PROJECT_DIR"
 
 
-
-#====================================
-#====================================
-## --- Список шаблонов ---
-#TEMPLATES=(
-#    "main.py.template"
-#    "schemas/{{ENTITY_NAME}}.py.template"
-#    "schemas/__init__.py.template"
-#    "crud/{{ENTITY_NAME}}.py.template"
-#    "crud/__init__.py.template"
-#    "core/config.py.template"
-#    "core/logger.py.template"
-#    "core/__init__.py.template"
-#    "core/middleware/http_logging.py.template"
-#    "utils/case_converter.py.template"
-#    "utils/db.py.template"
-#    "utils/filters.py.template"
-#    "utils/__init__.py.template"
-#    "api/__init__.py.template"
-#    "api/api_v1/__init__.py.template"
-#    "api/api_v1/{{ENTITY_NAME}}.py.template"
-#    "api/api_v1/dependencies.py.template"
-#    "api/api_v1/exceptions.py.template"
-#    "models/{{ENTITY_NAME}}.py.template"
-#    "models/__init__.py.template"
-#    "models/db_helper.py.template"
-#    "models/base.py.template"
-#    "models/mixins/int_id_pk.py.template"
-#    "models/mixins/__init__.py.template"
-#    "pyproject.toml.template"
-#    ".python-version.template"
-##    ".env.template"
-##    "docker-compose.yml.template"
-#)
-#===============================
-#===============================
-#
-## Database credentials setup
-#setup_database_credentials() {
-#    echo
-#    echo "========================================================================="
-#    echo "Введите данные для своего Postgres сервера, если будете использовать его,"
-#    echo "иначе, ниже будет предложено создать Postgres сервер в докере "
-#    echo "========================================================================="
-#    read -rp "Enter Postgres username [${USER}]: " DB_USER
-#    DB_USER="${DB_USER:-$USER}"
-#
-#    read -rp "Enter Postgres password [1]: " DB_PASSWORD
+#=======================================
+#=======================================
+#log() {
+#    echo "$(date '+%Y-%m-%d %H:%M:%S') - $1" | tee -a "$LOG_FILE"
+#}
+#=======================================
+#b) Обработка паролей:
+  # В функции setup_database_connection
+#    read -rsp "Введите пароль пользователя [1]: " DB_PASSWORD
 #    DB_PASSWORD="${DB_PASSWORD:-1}"
-#
-#    read -rp "Enter Postgres host [localhost]: " DB_HOST
-#    DB_HOST="${DB_HOST:-localhost}"
-#
-#    read -rp "Enter Postgres port [5434]: " DB_PORT
-#    DB_PORT="${DB_PORT:-5434}"
-#
-#    echo "Database credentials:"
-#    echo " - User: $DB_USER"
-#    echo " - Password: $DB_PASSWORD"
-#    echo " - Host: $DB_HOST"
-#    echo " - Port: $DB_PORT"
-#    echo " - Database: $PROJECT_NAME"
-#}
-#
-## Generate .env files
-#generate_env_files() {
-#    echo "=== Generating .env files ==="
-#
-#    # Template with placeholders
-#    sed "s/{{DB_USER}}/user/g; s/{{DB_PASSWORD}}/pwd/g; s/{{DB_HOST}}/localhost/g; s/{{DB_PORT}}/5432/g; s/{{PROJECT_NAME}}/db_name/g" \
-#        "$FULL_TEMPLATES_DIR/.env.template" > "$PROJECT_DIR/.env.template"
-#
-#    # Actual .env with real credentials
-#    sed "s/{{DB_USER}}/$DB_USER/g; s/{{DB_PASSWORD}}/$DB_PASSWORD/g; s/{{DB_HOST}}/$DB_HOST/g; s/{{DB_PORT}}/$DB_PORT/g; s/{{PROJECT_NAME}}/$PROJECT_NAME/g" \
-#        "$FULL_TEMPLATES_DIR/.env.template" > "$PROJECT_DIR/.env"
-#}
-#
-## Docker setup
-#setup_docker() {
-#    read -rp "Run Postgres in Docker? [Y/n]: " choice
-#    case "${choice:-Y}" in
-#        [nN])
-#            echo "Skipping Docker setup"
-#            echo "========================================================================="
-#            echo "Не забудьте создать БД '$PROJECT_NAME' вручную на вашем Postgres сервере."
-#            echo "Если БД с таким именем не будет, то Alembic не сможет создать таблицы"
-#            echo "========================================================================="
-#            read -rp "Для продолжения нажмите 'Enter'"
-#            return
-#            ;;
-#        *)
-#            echo "=== Setting up Docker ==="
-#            sed "s/{{PROJECT_NAME}}/$PROJECT_NAME/g; s/{{DB_USER}}/$DB_USER/g; s/{{DB_PASSWORD}}/$DB_PASSWORD/g; s/{{DB_PORT}}/$DB_PORT/g" \
-#                "$FULL_TEMPLATES_DIR/docker-compose.yml.template" > "$PROJECT_DIR/docker-compose.yml"
-#
-#            (cd "$PROJECT_DIR" && docker compose up -d pg)
-#
-#            echo "Database connection info:"
-#            echo " - Host: localhost"
-#            echo " - Port: $DB_PORT"
-#            echo " - Database: $PROJECT_NAME"
-#            echo " - User: $DB_USER"
-#            echo " - Password: $DB_PASSWORD"
-#            ;;
-#    esac
-#}
-#===============================
-## 6. Database setup
-#setup_database_credentials
-#generate_env_files
-#setup_docker
-#===============================
-#LOG_FILE_MAX_SIZE=$((10 * 1024 * 1024))  # 10 MB
-#LOG_FILE_BACKUP_COUNT=5
+#    echo

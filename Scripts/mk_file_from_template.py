@@ -1,3 +1,5 @@
+# Файл mk_file_from_template.py
+
 import sys
 import re
 from pathlib import Path
