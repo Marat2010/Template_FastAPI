@@ -1,0 +1,23 @@
+# template_FA/api/api_v1/dependencies.py.template
+from typing import Annotated
+
+from fastapi import Path, Depends, HTTPException, status
+from sqlalchemy.ext.asyncio import AsyncSession
+
+from models import db_helper, {{ENTITY_NAME_CAMEL}}
+from crud import {{ENTITY_NAME}} as {{ENTITY_NAME}}_crud
+
+
+async def {{ENTITY_NAME}}_by_id(
+    {{ENTITY_NAME}}_id: Annotated[int, Path],
+    session: Annotated[AsyncSession, Depends(db_helper.session_getter)],
+) -> {{ENTITY_NAME_CAMEL}}:
+
+    {{ENTITY_NAME}} = await {{ENTITY_NAME}}_crud.get_{{ENTITY_NAME}}(session=session, {{ENTITY_NAME}}_id={{ENTITY_NAME}}_id)
+    if {{ENTITY_NAME}} is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"{{ENTITY_NAME_CAMEL}} id: {{{ENTITY_NAME}}_id} not found!")
+
+    return {{ENTITY_NAME}}
+
