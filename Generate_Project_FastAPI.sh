@@ -211,7 +211,6 @@ generate_env_files() {
         "$FULL_TEMPLATES_DIR/.env.template" > "$PROJECT_DIR/.env"
 }
 
-<<<<<<< HEAD
 # Generate project files (Заменили последовательный цикл на параллельный)
 generate_files_parallel() {
     local max_jobs=4
@@ -224,8 +223,6 @@ generate_files_parallel() {
     wait
 }
 
-=======
->>>>>>> f115ea7dbe0ea606582f4212b47bd44e2674a28b
 # Alembic initialization
 setup_alembic() {
     log "Начало инициализации Alembic"
@@ -350,21 +347,7 @@ TEMPLATES=(
     ".python-version.template"
 )
 
-<<<<<<< HEAD
 generate_files_parallel
-=======
-for template in "${TEMPLATES[@]}"; do
-    python3 "$FULL_SCRIPTS_DIR/mk_file_from_template.py" \
-        "$ENTITY_NAME" \
-        "$template" \
-        "$PROJECT_DIR" \
-        "$FULL_TEMPLATES_DIR" \
-        "$PROJECT_NAME" \
-        "$PYTHON_VERSION" \
-        "$DB_USER" \
-        "$DB_PASSWORD"
-done
->>>>>>> f115ea7dbe0ea606582f4212b47bd44e2674a28b
 
 # 8. Initialize Alembic
 setup_alembic
@@ -372,7 +355,6 @@ setup_alembic
 # 9. Вывод итогов
 show_summary
 
-<<<<<<< HEAD
 
 #=======================================
 #=======================================
@@ -388,14 +370,6 @@ show_summary
 #        "$DB_PASSWORD"
 #done
 #=======================================
-=======
-#echo "=== Project setup complete ==="
-#echo "Project directory: $PROJECT_DIR"
-
-
-#=======================================
-#=======================================
->>>>>>> f115ea7dbe0ea606582f4212b47bd44e2674a28b
 #log() {
 #    echo "$(date '+%Y-%m-%d %H:%M:%S') - $1" | tee -a "$LOG_FILE"
 #}
@@ -405,10 +379,7 @@ show_summary
 #    read -rsp "Введите пароль пользователя [1]: " DB_PASSWORD
 #    DB_PASSWORD="${DB_PASSWORD:-1}"
 #    echo
-<<<<<<< HEAD
 #=======================================
 #echo "=== Project setup complete ==="
 #echo "Project directory: $PROJECT_DIR"
 #=======================================
-=======
->>>>>>> f115ea7dbe0ea606582f4212b47bd44e2674a28b
