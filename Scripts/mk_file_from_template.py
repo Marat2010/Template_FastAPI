@@ -4,6 +4,37 @@ import sys
 import re
 from pathlib import Path
 
+import logging
+from datetime import datetime
+import os  # Для автоматического создания папки Logs
+
+# Создаем папку для логов, если её нет
+os.makedirs("Logs", exist_ok=True)
+
+# Формируем имя файла с датой (например: "Logs/template_gen_debug_2024-01-31.log")
+# log_filename = f"Logs/template_gen_{datetime.now().strftime('%Y-%m-%d')}.log"
+log_filename = f"Logs/tmp_template_gen.log"
+
+# Настройка логирования (дозапись в файл)
+logging.basicConfig(
+    level=logging.INFO,
+    format='[%(asctime)s] [%(levelname)s] %(message)s',
+    datefmt='%Y-%m-%d %H:%M:%S',  # Убираем миллисекунды
+    filename=log_filename,
+    filemode='a'  # 'a' = append (добавление), 'w' = write (перезапись)
+)
+
+# Добавляем вывод в консоль
+console_handler = logging.StreamHandler()
+console_handler.setLevel(logging.INFO)
+console_handler.setFormatter(
+    logging.Formatter(
+        '[%(asctime)s] [%(levelname)s] %(message)s',
+        datefmt='%Y-%m-%d %H:%M:%S'  # Убираем миллисекунды и здесь
+    )
+)
+logging.getLogger().addHandler(console_handler)
+
 
 def snake_to_camel(snake_str: str) -> str:
     return ''.join(word.title() for word in snake_str.split('_'))
@@ -27,14 +58,16 @@ def process_template(
 
         output_path.parent.mkdir(parents=True, exist_ok=True)
         output_path.write_text(content, encoding='utf-8')
-        print(f"[OK] Файл {output_path} создан!")
+        logging.info(f"[OK] Файл {output_path} создан!")
     except Exception as e:
-        print(f"\n===[ERROR] Ошибка при обработке {template_path}: {e}===\n")
+        logging.error(f"\n===!!!!! Ошибка при обработке {template_path}: {e}===\n")
 
 
 def main():
+    # logging.info(f"Запуск с аргументами: {sys.argv}")
+
     if len(sys.argv) < 3:
-        print(
+        logging.error(
             "Использование: python mk_file_from_template.py <ENTITY_NAME> <TEMPLATE_RELATIVE_PATH>"
             " [PROJECT_DIR] [TEMPLATES_DIR] [PROJECT_NAME] [PYTHON_VERSION] [DB_USER] [DB_PASSWORD]")
         sys.exit(1)
@@ -54,7 +87,7 @@ def main():
     # Нормализуем имя сущности
     entity_name, entity_name_camel = normalize_entity_name(args['entity_name'])
     if not entity_name:
-        print(f"[ERROR] Недопустимое имя сущности: '{args['entity_name']}'")
+        logging.error(f"!!!!!  Недопустимое имя сущности: '{args['entity_name']}'")
         sys.exit(1)
 
     # Формируем замены
@@ -73,7 +106,7 @@ def main():
     output_path = Path(args['project_dir']) / output_rel_path
 
     if not template_path.exists():
-        print(f"[ERROR] Шаблон {template_path} не найден!")
+        logging.error(f"!!!!! Шаблон {template_path} не найден!")
         sys.exit(1)
 
     process_template(template_path, output_path, replacements)
@@ -81,3 +114,19 @@ def main():
 
 if __name__ == "__main__":
     main()
+
+
+# =====================================
+# =====================================
+
+# # Включим логирование в файл
+# import logging
+#
+# logging.basicConfig(
+#     level=logging.INFO,
+#     format='[%(asctime)s] [%(levelname)s] %(message)s',
+#     filename='Logs/template_gen_debug.log',
+#     filemode='w'
+# )
+# # Пример лога
+# logging.info("Этот лог добавится в файл, а не перезапишет его!")
