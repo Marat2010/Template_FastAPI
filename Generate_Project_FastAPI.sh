@@ -1,8 +1,8 @@
 #!/bin/bash
+# Файл Generate_Project_FastAPI.sh
+
 set -e
 #set -x  # Добавляем для отладки (покажет какие команды выполняются)
-
-# Файл Generate_Project_FastAPI.sh
 
 # --- Constants ---
 DEFAULT_PROJECT_NAME="proj_fa"
@@ -268,8 +268,6 @@ generate_files_parallel() {
 
     # Добавляем временный лог в основной
     if [ -s "$tmp_log" ]; then
-#        log "Результаты генерации:"
-#        cat "$tmp_log" | tee -a "$LOG_FILE"
         cat "$tmp_log" >> "$LOG_FILE"
     else
         log_error "Лог генерации шаблонов пуст!"
@@ -374,8 +372,6 @@ FULL_SCRIPTS_DIR="$SCRIPT_DIR/$SCRIPTS_DIR"
 # 6. Database setup
 setup_database_connection
 generate_env_files
-#log "База данных настроена: host=$DB_HOST, port=$DB_PORT"
-
 
 # 7. Generate project files
 log "=== Generating project files ==="
@@ -406,7 +402,7 @@ TEMPLATES=(
     "models/mixins/__init__.py.template"
     "pyproject.toml.template"
     ".python-version.template"
-#    "fileeeerrrrr"
+#    "тест_файл_несуществует"
 )
 
 generate_files_parallel
@@ -420,3 +416,5 @@ show_summary
 
 #=======================================
 #=======================================
+#        log "Результаты генерации:"
+#        cat "$tmp_log" | tee -a "$LOG_FILE"
