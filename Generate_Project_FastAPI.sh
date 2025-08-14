@@ -1,8 +1,8 @@
 #!/bin/bash
+# Файл Generate_Project_FastAPI.sh
+
 set -e
 #set -x  # Добавляем для отладки (покажет какие команды выполняются)
-
-# Файл Generate_Project_FastAPI.sh
 
 # --- Constants ---
 DEFAULT_PROJECT_NAME="proj_fa"
@@ -15,24 +15,11 @@ LOG_DIR="Logs"
 mkdir -p "$LOG_DIR"
 LOG_FILE="${LOG_DIR}/generate_project_$(date '+%Y%m%d_%H%M%S').log"
 
-#log() {
-#    local message="$1"
-#    local timestamp
-#    timestamp=$(date '+%Y-%m-%d %H:%M:%S')
-#    echo "${timestamp} - ${message}" | tee -a "$LOG_FILE"
-#}
-
 log() {
     local message="$1"
     local timestamp=$(date '+%Y-%m-%d %H:%M:%S')
     echo -e "[${timestamp}] [INFO] ${message}" | tee -a "$LOG_FILE"
 }
-
-#log_error() {
-#    local message="$1"
-#    local timestamp=$(date '+%Y-%m-%d %H:%M:%S')
-#    echo -e "[${timestamp}] [\e[31mERROR\e[0m] ${message}" | tee -a "$LOG_FILE" >&2
-#}
 
 add_error_tag() {
     sed 's/\[ERROR\]/\x1b[31m&\x1b[0m/g'
@@ -182,6 +169,7 @@ setup_database_connection() {
                 exit 1
             else
                 PGPASSWORD="$DB_PASSWORD" createdb -h "$DB_HOST" -p "$DB_PORT" -U "$DB_USER" "$DB_NAME"
+                log "База данных '$DB_NAME' создана"
             fi
         fi
     else
@@ -203,17 +191,19 @@ setup_database_connection() {
 
         # Проверка существования контейнера
         if docker ps -a --format '{{.Names}}' | grep -q "${PROJECT_NAME}_pg"; then
-            read -rp "Docker контейнер с именем '${PROJECT_NAME}_pg' уже существует. Пересоздать? [y/N] " recreate
-            if [[ "$recreate" =~ ^[Yy]$ ]]; then
-#                docker rm -f "${PROJECT_NAME}_pg"
-                run_cmd docker rm -f -v "${PROJECT_NAME}_pg"
-                run_cmd docker volume rm "${PROJECT_NAME}_pg_data"
-                run_cmd docker network rm "${PROJECT_NAME}_default"
-                log "Удалили существующий контейнер с именем '${PROJECT_NAME}_pg'"
-            else
-                log "Используем существующий контейнер с именем '${PROJECT_NAME}_pg'"
-                return
-            fi
+            while true; do
+                read -rp "Docker контейнер '${PROJECT_NAME}_pg' уже существует. Пересоздать? [Y/N] " recreate
+                if [[ "$recreate" =~ ^[Yy]$ ]]; then
+                  run_cmd docker rm -f -v "${PROJECT_NAME}_pg"
+                  run_cmd docker volume rm "${PROJECT_NAME}_pg_data"
+                  run_cmd docker network rm "${PROJECT_NAME}_default"
+                  log "Удалили существующий контейнер с именем '${PROJECT_NAME}_pg'"
+                  break
+                elif [[ "$recreate" =~ ^[Nn]$ ]]; then
+                  log "Используем существующий контейнер с именем '${PROJECT_NAME}_pg'"
+                  break
+                fi
+            done
         fi
 
         # Start container
@@ -259,109 +249,33 @@ generate_env_files() {
 # Generate project files (Заменили последовательный цикл на параллельный)
 generate_files_parallel() {
     local max_jobs=4
+    local tmp_log="Logs/tmp_template_gen.log"
+
+    # Очищаем временный лог
+    : > "$tmp_log"
+
+    log "Начало генерации ${#TEMPLATES[@]} файлов (параллельно, макс $max_jobs процессов)"
+
     for template in "${TEMPLATES[@]}"; do
         while [ "$(jobs -r | wc -l)" -ge "$max_jobs" ]; do sleep 0.1; done
+
         python3 "$FULL_SCRIPTS_DIR/mk_file_from_template.py" \
             "$ENTITY_NAME" "$template" "$PROJECT_DIR" "$FULL_TEMPLATES_DIR" \
             "$PROJECT_NAME" "$PYTHON_VERSION" "$DB_USER" "$DB_PASSWORD" &
     done
+
     wait
+
+    # Добавляем временный лог в основной
+    if [ -s "$tmp_log" ]; then
+        cat "$tmp_log" >> "$LOG_FILE"
+    else
+        log_error "Лог генерации шаблонов пуст!"
+    fi
+
+    log "Генерация файлов завершена"
 }
 
-#generate_files_parallel() {
-#    local max_jobs=4
-#    local counter=0
-#    local total=${#TEMPLATES[@]}
-#
-#    log "Генерация $total файлов (параллельно, макс $max_jobs процессов)"
-#
-#    # Временный файл для сбора логов
-#    local parallel_log="${PROJECT_DIR}/parallel_gen.log"
-#    : > "$parallel_log"
-#
-#    for template in "${TEMPLATES[@]}"; do
-#        ((counter++))
-#        while [ "$(jobs -r | wc -l)" -ge "$max_jobs" ]; do sleep 0.1; done
-#
-#        {
-#            local short_name="${template##*/}"
-#            local output
-#
-#            # Явный вызов с перенаправлением вывода
-#            output=$(
-#                python3 "$FULL_SCRIPTS_DIR/mk_file_from_template.py" \
-#                    "$ENTITY_NAME" "$template" \
-#                    "$(realpath "$PROJECT_DIR")" \
-#                    "$(realpath "$FULL_TEMPLATES_DIR")" \
-#                    "$PROJECT_NAME" "$PYTHON_VERSION" \
-#                    "$DB_USER" "$DB_PASSWORD" 2>&1
-#            )
-#
-#            # Запись в лог с меткой времени
-#            printf "[%s] %s:\n%s\n" \
-#                "$(date '+%Y-%m-%d %H:%M:%S')" \
-#                "$short_name" \
-#                "$output" >> "$parallel_log"
-#        } &
-#    done
-#
-#    wait
-#
-#    # Вывод результатов
-#    log "Результаты генерации:"
-#    cat "$parallel_log"
-#    cat "$parallel_log" >> "$LOG_FILE"
-#    rm -f "$parallel_log"
-#
-#    log "Генерация файлов завершена"
-#}
-
-
-#generate_files_parallel() {
-#    local max_jobs=4
-#    local counter=0
-#    local total=${#TEMPLATES[@]}
-#    local error_count=0
-#
-#    log "Начало генерации $total файлов (параллельно)"
-#
-#    for template in "${TEMPLATES[@]}"; do
-#        ((counter++))
-#        while [ "$(jobs -r | wc -l)" -ge "$max_jobs" ]; do sleep 0.1; done
-#
-#        {
-#            local short_name="${template##*/}"
-#            local output
-#
-#            # Явный вызов с полными путями
-#            output=$(python3 "$FULL_SCRIPTS_DIR/mk_file_from_template.py" \
-#                "$ENTITY_NAME" "$template" \
-#                "$(realpath "$PROJECT_DIR")" \
-#                "$(realpath "$FULL_TEMPLATES_DIR")" \
-#                "$PROJECT_NAME" "$PYTHON_VERSION" \
-#                "$DB_USER" "$DB_PASSWORD" 2>&1)
-#            local status=$?
-#
-#            if [ $status -eq 0 ]; then
-#                log "[$counter/$total] Успех: $short_name"
-#            else
-#                log_error "[$counter/$total] Ошибка: $short_name"
-#                echo "$output" >&2
-#                ((error_count++))
-#            fi
-#        } &
-#    done
-#
-#    wait
-#
-#    if [ $error_count -gt 0 ]; then
-#        log_error "Завершено с $error_count ошибками"
-#        return 1
-#    else
-#        log "Все файлы успешно сгенерированы"
-#        return 0
-#    fi
-#}
 
 # Alembic initialization
 setup_alembic() {
@@ -458,8 +372,6 @@ FULL_SCRIPTS_DIR="$SCRIPT_DIR/$SCRIPTS_DIR"
 # 6. Database setup
 setup_database_connection
 generate_env_files
-#log "База данных настроена: host=$DB_HOST, port=$DB_PORT"
-
 
 # 7. Generate project files
 log "=== Generating project files ==="
@@ -490,7 +402,7 @@ TEMPLATES=(
     "models/mixins/__init__.py.template"
     "pyproject.toml.template"
     ".python-version.template"
-    "sassas"
+#    "тест_файл_несуществует"
 )
 
 generate_files_parallel
@@ -504,39 +416,5 @@ show_summary
 
 #=======================================
 #=======================================
-#        log "Запуск контейнера PostgreSQL..."
-#        pushd "$PROJECT_DIR" >/dev/null
-#        run_cmd docker compose up -d pg
-#        popd >/dev/null
-
-#        (
-#            cd "$PROJECT_DIR"
-#            source ../Generate_Project_FastAPI.sh  # Перезагружаем переменные
-#            run_cmd docker compose up -d pg
-#        )
-#=======================================
-#for template in "${TEMPLATES[@]}"; do
-#    python3 "$FULL_SCRIPTS_DIR/mk_file_from_template.py" \
-#        "$ENTITY_NAME" \
-#        "$template" \
-#        "$PROJECT_DIR" \
-#        "$FULL_TEMPLATES_DIR" \
-#        "$PROJECT_NAME" \
-#        "$PYTHON_VERSION" \
-#        "$DB_USER" \
-#        "$DB_PASSWORD"
-#done
-#=======================================
-#log() {
-#    echo "$(date '+%Y-%m-%d %H:%M:%S') - $1" | tee -a "$LOG_FILE"
-#}
-#=======================================
-#b) Обработка паролей:
-  # В функции setup_database_connection
-#    read -rsp "Введите пароль пользователя [1]: " DB_PASSWORD
-#    DB_PASSWORD="${DB_PASSWORD:-1}"
-#    echo
-#=======================================
-#echo "=== Project setup complete ==="
-#echo "Project directory: $PROJECT_DIR"
-#=======================================
+#        log "Результаты генерации:"
+#        cat "$tmp_log" | tee -a "$LOG_FILE"

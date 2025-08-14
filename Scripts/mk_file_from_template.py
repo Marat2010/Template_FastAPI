@@ -11,8 +11,9 @@ import os  # Для автоматического создания папки L
 # Создаем папку для логов, если её нет
 os.makedirs("Logs", exist_ok=True)
 
-# Формируем имя файла с датой (например: "Logs/template_gen_debug_2024-01-31.log")
-log_filename = f"Logs/template_gen_{datetime.now().strftime('%Y-%m-%d')}.log"
+# Если имя файла с датой (например: "Logs/template_gen_debug_2024-01-31.log")
+# log_filename = f"Logs/template_gen_{datetime.now().strftime('%Y-%m-%d')}.log"
+log_filename = f"Logs/tmp_template_gen.log"
 
 # Настройка логирования (дозапись в файл)
 logging.basicConfig(
